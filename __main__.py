@@ -127,11 +127,13 @@ class MyComponent(commands.Component):
         # We pass bot here as an example...
         self.bot = bot
         self.derp_trigger = 69
-        self.count = 0
+        self.derp_count = 0
+        self.leviosah_trigger = 5
+        self.leviosah_count = 0
         self.file_path = "bot_db.db"
         self.db = DB(self.file_path, self.bot.pool)
         self.seen_users = set()
-        self.player = Player(self.onPlaybackFinished)
+        # self.player = Player(self.onPlaybackFinished)
 
     def onPlaybackFinished(self, played_url: str):
         """ clear the played song from DB
@@ -172,7 +174,7 @@ class MyComponent(commands.Component):
     # TODO: add timestamps to left messages AND figure out a re-notify timer
     #  if a new message is left users should be told after 30 mins (for example)
     @has_perm()
-    @commands.command(aliases=["leave_msg", "lm", "send_msg", "sendmsg"])
+    @commands.command(aliases=["leave_msg", "lm", "send_msg", "sendmsg", "hatemsg"])
     async def leavemsg(self, ctx:commands.Context, receiver: twitchio.User):
         msg = ctx.message.text
         msg_time = ctx.message.timestamp
@@ -181,13 +183,32 @@ class MyComponent(commands.Component):
         await self.db.leave_message(sender=sender, reciever=target, msg=msg)
 
     @has_perm()
-    @commands.command(aliases=["get_msg", "gm"])
+    @commands.command(aliases=["get_msg", "gm", "showfeet", "fwends"])
     async def getmsg(self, ctx:commands.Context, sender: twitchio.User):
         # sender_id = sender
         receiver = ctx.author
         messages = await self.db.get_message(sender=sender, receiver=receiver)
         for msg in messages:
             await ctx.reply(msg)
+
+    @commands.command(aliases=["messages", "msgs"])
+    async def inbox(self, ctx: commands.Context):
+        response = await self.db.notify(chatter_id=ctx.author.id)
+
+        notify_parts: list[str] = []
+
+        if not response:
+            return
+
+        for count, user_id in response:
+            user = await self.bot.fetch_user(id=user_id)
+            notify_parts.append(f"{user.name} ({count})")
+
+        notify = (f"{ctx.author.mention} you have messages stored from: " +
+                  ", ".join(notify_parts) +
+                  " to get a message use !getmsg @username")
+
+        await ctx.broadcaster.send_message(message=notify, sender=self.bot.user, token_for=self.bot.user)
 
     @commands.command()
     async def new_error(self, ctx:commands.Context):
@@ -215,29 +236,77 @@ class MyComponent(commands.Component):
 
         await payload.broadcaster.send_message(message=notify, sender=self.bot.user, token_for=self.bot.user)
 
+#INFO leviosaAH func
+    # @commands.Component.listener()
+    # async def leviosah_message(self, payload: twitchio.ChatMessage):
+    #     self.leviosah_count += 1
+    #     if self.leviosah_count <= self.leviosah:
+    #         return
+    #     elif payload.chatter.id == self.bot.owner_id: #make me look big smart - no derp string for me
+    #         return
+    #     """word = msg.split()[-1]
+    #      if len(word) >= 3 and (word[-3] in "aeiou") and (word[-1] in "aeiou"):
+    #       reply(f"its called {word[:-1] + word[-1] * 4} not {word[:-3] + word[-3] * 4 + word[-2:]}")
+    #       """
+    #     word = payload.text.split()[-1].lower()
+    #     if len(word) >= 3 and (word[-3] in "aeiou") and (word[-1] in "aeiou"):
+    #         self.leviosah_count = 0
+    #
+    #         derp_string = f"its called {word[:-1] + word[-1] * 4} not {word[:-3] + word[-3] * 4 + word[-2:]}"
+    #
+    #         await payload.broadcaster.send_message(message=derp_string, sender=self.bot.user, token_for=self.bot.user)
+
+
+
+#INFO derp func
     @commands.Component.listener()
     async def event_message(self, payload: twitchio.ChatMessage):
-        self.count += 1
-        if self.count <= self.derp_trigger:
-            return
-        elif payload.chatter.id == self.bot.owner_id: #make me look big smart - no derp string for me
-            return
-        self.count = 0
-        derp_string = ""
-        letters = 0
-        #TODO - this current version has no whitespace at all
-        #TODO - if the derp msg is a reply it adds the username in [0] as a derpified word
-        for index in range(len(payload.text)):
-            if payload.text[index].isalpha():
-                if letters % 2 == 0:
-                    derp_string += payload.text[index].lower()
+        self.derp_count += 1
+        self.leviosah_count += 1
+        if payload.chatter.id != self.bot.owner_id and self.derp_count % self.derp_trigger == 0:
+            derp_string = ""
+            letters = 0
+            for index in range(len(payload.text)):
+                if payload.text[index].isalpha():
+                    if letters % 2 == 0:
+                        derp_string += payload.text[index].lower()
+                    else:
+                        derp_string += payload.text[index].upper()
+                    letters += 1
                 else:
-                    derp_string += payload.text[index].upper()
-                letters += 1
-            else:
-                derp_string += payload.text[index]
+                    derp_string += payload.text[index]
+            await payload.broadcaster.send_message(message=derp_string, sender=self.bot.user, token_for=self.bot.user)
 
-        await payload.broadcaster.send_message(message=derp_string, sender=self.bot.user, token_for=self.bot.user)
+        if payload.chatter.id != self.bot.owner_id and self.leviosah_count % self.leviosah_trigger == 0:
+            word = payload.text.split()[-1].lower()
+            if len(word) >= 3 and (word[-3] in "aeiou") and (word[-1] in "aeiou"):
+                self.leviosah_count = 0
+
+                derp_string = f"its called {word[:-1] + word[-1].upper() * 4} not {word[:-3] + word[-3] * 4 + word[-2:]}"
+
+                await payload.broadcaster.send_message(message=derp_string, sender=self.bot.user, token_for=self.bot.user)
+
+
+    # async def event_message(self, payload: twitchio.ChatMessage):
+    #     self.derp_count += 1
+    #     if self.derp_count <= self.derp_trigger:
+    #         return
+    #     elif payload.chatter.id == self.bot.owner_id: #make me look big smart - no derp string for me
+    #         return
+    #     self.derp_count = 0
+    #     derp_string = ""
+    #     letters = 0
+    #     for index in range(len(payload.text)):
+    #         if payload.text[index].isalpha():
+    #             if letters % 2 == 0:
+    #                 derp_string += payload.text[index].lower()
+    #             else:
+    #                 derp_string += payload.text[index].upper()
+    #             letters += 1
+    #         else:
+    #             derp_string += payload.text[index]
+    #
+    #     await payload.broadcaster.send_message(message=derp_string, sender=self.bot.user, token_for=self.bot.user)
 
     @commands.is_elevated()
     @commands.command(aliases=["allow", "fine", "ok"])
