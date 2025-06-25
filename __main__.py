@@ -287,27 +287,6 @@ class MyComponent(commands.Component):
                 await payload.broadcaster.send_message(message=derp_string, sender=self.bot.user, token_for=self.bot.user)
 
 
-    # async def event_message(self, payload: twitchio.ChatMessage):
-    #     self.derp_count += 1
-    #     if self.derp_count <= self.derp_trigger:
-    #         return
-    #     elif payload.chatter.id == self.bot.owner_id: #make me look big smart - no derp string for me
-    #         return
-    #     self.derp_count = 0
-    #     derp_string = ""
-    #     letters = 0
-    #     for index in range(len(payload.text)):
-    #         if payload.text[index].isalpha():
-    #             if letters % 2 == 0:
-    #                 derp_string += payload.text[index].lower()
-    #             else:
-    #                 derp_string += payload.text[index].upper()
-    #             letters += 1
-    #         else:
-    #             derp_string += payload.text[index]
-    #
-    #     await payload.broadcaster.send_message(message=derp_string, sender=self.bot.user, token_for=self.bot.user)
-
     @commands.is_elevated()
     @commands.command(aliases=["allow", "fine", "ok"])
     async def permit(self, ctx:commands.Context, *users: twitchio.User) -> None:
