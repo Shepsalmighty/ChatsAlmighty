@@ -8,6 +8,8 @@ from twitchio.ext import commands
 from twitchio import eventsub
 from os import getenv
 from dotenv import load_dotenv
+from twitchio.ext.commands import is_owner
+
 from db_interface import DataBaseInterface as DB
 from audio_player import Player
 
@@ -46,6 +48,7 @@ class Bot(commands.Bot):
             owner_id=getenv("OWNER_ID"),
             prefix="!",
             case_insensitive=True
+
         )
         self.pool = pool
 
@@ -121,6 +124,7 @@ class Bot(commands.Bot):
         LOGGER.error(msg, exc_info=error)
 
 
+
 class MyComponent(commands.Component):
     def __init__(self, bot: Bot):
         # Passing args is not required...
@@ -133,6 +137,7 @@ class MyComponent(commands.Component):
         self.file_path = "bot_db.db"
         self.db = DB(self.file_path, self.bot.pool)
         self.seen_users = set()
+        self.lurkers = set()
         # self.player = Player(self.onPlaybackFinished)
 
     def onPlaybackFinished(self, played_url: str):
@@ -149,6 +154,9 @@ class MyComponent(commands.Component):
         await ctx.reply(f"Hello, World! Oh, and you {ctx.chatter.mention}")
 
 
+#TODO switch over from self botting to bot account
+
+
 #TODO song request command
 #TODO:
 # if the bot detects that the song contains vocals, the bot responds to the request,
@@ -158,8 +166,9 @@ class MyComponent(commands.Component):
     @has_perm()
     @commands.command(aliases=["song_req", "song_request", "s_r"])
     async def sr(self, ctx:commands.Context, song: str) -> None:
-        """request a song from a youtube link: !sr https-youtube-link"""
+        """request a song from a youtube link from browser: !sr https://www.youtube.com/watch?v=....."""
         #INFO youtube may shorten link so if check could break/cause issues
+        #TODO use yt_dlp to check link is allowable yt link
         if not song.startswith("https://www.youtube.com/watch?v="):
             return
         user = ctx.author.id
@@ -167,10 +176,12 @@ class MyComponent(commands.Component):
 
     @commands.command(aliases=["undo", "cancel", "remove"])
     async def remove_last(self, ctx:commands.Context):
+        """remove the last song you requested"""
         await self.db.remove(ctx.author.id)
 
     @commands.is_owner()
     async def clear(self, ctx:commands.Context):
+        """clear all song requests from queue"""
         await self.db.clear_songs()
 
     @has_perm()
@@ -193,6 +204,22 @@ class MyComponent(commands.Component):
         for msg in messages:
             await ctx.reply(msg)
 
+    @is_owner()
+    @commands.command()
+    async def brb(self, ctx: commands.Context):
+        await ctx.send("Sheps will be right back, he's probably poopin")
+
+    @commands.command(aliases=["mopLurk"])
+    async def lurk(self, ctx: commands.Context):
+        self.lurkers.add(ctx.author.name)
+
+    @commands.command()
+    async def lurkers(self, ctx: commands.Context):
+        if len(self.lurkers) == 0:
+            await ctx.send("No one hiding in the bushes")
+            return
+        await ctx.send("Lurkers: " + ", ".join(self.lurkers))
+
     @commands.command(aliases=["messages", "msgs"])
     async def inbox(self, ctx: commands.Context):
         """shows how many messages you have waiting for you"""
@@ -201,6 +228,7 @@ class MyComponent(commands.Component):
         notify_parts: list[str] = []
 
         if not response:
+            await ctx.reply("you have no messages because no one loves you... obv")
             return
 
         for count, user_id in response:
@@ -256,8 +284,15 @@ class MyComponent(commands.Component):
         joined = " ".join(cmds)
         await ctx.send(f"Commands: {joined}")
 
+
+#TODO move commands into 2 modules 1 for admins (permit/deny etc)
+# one for everyone 
+
     @commands.Component.listener("event_message")
     async def seen_chatter(self, payload: twitchio.ChatMessage):
+        #if chatter was lurking, remove from lurker list
+        self.lurkers.discard(payload.chatter.name)
+
         if payload.chatter.id in self.seen_users:
             return
         self.seen_users.add(payload.chatter.id)
@@ -279,7 +314,6 @@ class MyComponent(commands.Component):
         await payload.broadcaster.send_message(message=notify, sender=self.bot.user, token_for=self.bot.user)
 
 
-#INFO derp func
     @commands.Component.listener("event_message")
     async def derp_msg(self, payload: twitchio.ChatMessage):
         self.derp_count += 1
