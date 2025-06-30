@@ -210,6 +210,10 @@ class MyComponent(commands.Component):
 
         await ctx.broadcaster.send_message(message=notify, sender=self.bot.user, token_for=self.bot.user)
 
+    @commands.command(aliases=["clear", "clear_msgs", "empty"])
+    async def clear_inbox(self, ctx: commands.Context):
+        await self.db.clear_inbox(ctx.author.id)
+
     @commands.command()
     async def new_error(self, ctx:commands.Context):
         raise ValueError("a new error occurs")
@@ -236,31 +240,10 @@ class MyComponent(commands.Component):
 
         await payload.broadcaster.send_message(message=notify, sender=self.bot.user, token_for=self.bot.user)
 
-#INFO leviosaAH func
-    # @commands.Component.listener()
-    # async def leviosah_message(self, payload: twitchio.ChatMessage):
-    #     self.leviosah_count += 1
-    #     if self.leviosah_count <= self.leviosah:
-    #         return
-    #     elif payload.chatter.id == self.bot.owner_id: #make me look big smart - no derp string for me
-    #         return
-    #     """word = msg.split()[-1]
-    #      if len(word) >= 3 and (word[-3] in "aeiou") and (word[-1] in "aeiou"):
-    #       reply(f"its called {word[:-1] + word[-1] * 4} not {word[:-3] + word[-3] * 4 + word[-2:]}")
-    #       """
-    #     word = payload.text.split()[-1].lower()
-    #     if len(word) >= 3 and (word[-3] in "aeiou") and (word[-1] in "aeiou"):
-    #         self.leviosah_count = 0
-    #
-    #         derp_string = f"its called {word[:-1] + word[-1] * 4} not {word[:-3] + word[-3] * 4 + word[-2:]}"
-    #
-    #         await payload.broadcaster.send_message(message=derp_string, sender=self.bot.user, token_for=self.bot.user)
-
-
 
 #INFO derp func
-    @commands.Component.listener()
-    async def event_message(self, payload: twitchio.ChatMessage):
+    @commands.Component.listener("event_message")
+    async def derp_msg(self, payload: twitchio.ChatMessage):
         self.derp_count += 1
         self.leviosah_count += 1
         if payload.chatter.id != self.bot.owner_id and self.derp_count % self.derp_trigger == 0:
