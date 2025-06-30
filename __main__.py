@@ -144,6 +144,7 @@ class MyComponent(commands.Component):
     @has_perm()
     @commands.command(aliases=["hello", "howdy", "how_are_ya", "rainbow_dicks"])
     async def hi(self, ctx:commands.Context):
+        """if you need to be told what this does even i can't help you"""
         # perms_list.append(ctx.chatter.name)
         await ctx.reply(f"Hello, World! Oh, and you {ctx.chatter.mention}")
 
@@ -157,6 +158,7 @@ class MyComponent(commands.Component):
     @has_perm()
     @commands.command(aliases=["song_req", "song_request", "s_r"])
     async def sr(self, ctx:commands.Context, song: str) -> None:
+        """request a song from a youtube link: !sr https-youtube-link"""
         #INFO youtube may shorten link so if check could break/cause issues
         if not song.startswith("https://www.youtube.com/watch?v="):
             return
@@ -171,11 +173,10 @@ class MyComponent(commands.Component):
     async def clear(self, ctx:commands.Context):
         await self.db.clear_songs()
 
-    # TODO: add timestamps to left messages AND figure out a re-notify timer
-    #  if a new message is left users should be told after 30 mins (for example)
     @has_perm()
     @commands.command(aliases=["leave_msg", "lm", "send_msg", "sendmsg", "hatemsg"])
     async def leavemsg(self, ctx:commands.Context, receiver: twitchio.User):
+        """leave a message for someone: !leavemsg @someone"""
         msg = ctx.message.text
         msg_time = ctx.message.timestamp
         sender = ctx.author.id
@@ -185,6 +186,7 @@ class MyComponent(commands.Component):
     @has_perm()
     @commands.command(aliases=["get_msg", "gm", "showfeet", "fwends"])
     async def getmsg(self, ctx:commands.Context, sender: twitchio.User):
+        """get a message someone left you: !getmsg @username"""
         # sender_id = sender
         receiver = ctx.author
         messages = await self.db.get_message(sender=sender, receiver=receiver)
@@ -193,6 +195,7 @@ class MyComponent(commands.Component):
 
     @commands.command(aliases=["messages", "msgs"])
     async def inbox(self, ctx: commands.Context):
+        """shows how many messages you have waiting for you"""
         response = await self.db.notify(chatter_id=ctx.author.id)
 
         notify_parts: list[str] = []
@@ -210,15 +213,50 @@ class MyComponent(commands.Component):
 
         await ctx.broadcaster.send_message(message=notify, sender=self.bot.user, token_for=self.bot.user)
 
-    @commands.command(aliases=["clear", "clear_msgs", "empty"])
+    @commands.command(aliases=["clear", "clear_messages", "clear_msgs", "empty"])
     async def clear_inbox(self, ctx: commands.Context):
-        await self.db.clear_inbox(ctx.author.id)
+        """deletes all stored messages for this user"""
+        count = await self.db.clear_inbox(ctx.author.id)
+        await ctx.reply(f"{count} msgs deleted")
 
-    @commands.command()
-    async def new_error(self, ctx:commands.Context):
-        raise ValueError("a new error occurs")
+    @commands.group(invoke_fallback=True)
+    async def help(self, ctx: commands.Context, *, cmd: str | None = None):
+        """no help is coming! PANIC!!!!"""
+        if not cmd:
+            await ctx.send("use !help example_command_name to learn how that command works blah blah")
+            return
 
-    @commands.Component.listener("message")
+        cmd = cmd.removeprefix(ctx.prefix)
+        command = ctx.bot.get_command(cmd)
+        if not command:
+            await ctx.send(f'No command "{cmd}" found')
+            return
+
+        docs = command.callback.__doc__
+        if not docs:
+            return
+
+        await ctx.send(f"{command.name} {docs}")
+
+
+    @commands.command(aliases=["commands"])
+    async def cmds(self, ctx:commands.Context):
+        """lists all current commands for this channel"""
+        cmds = []
+
+        for cmd in ctx.bot.unique_commands:
+            try:
+                # I'll make this public before full release
+                await cmd._run_guards(ctx, with_cooldowns=False)
+            except commands.GuardFailure:
+                continue
+
+            cmds.append(f"{ctx.prefix}{cmd}")
+
+        joined = " ".join(cmds)
+        await ctx.send(f"Commands: {joined}")
+
+    @commands.Component.listener("event_message")
     async def seen_chatter(self, payload: twitchio.ChatMessage):
         if payload.chatter.id in self.seen_users:
             return
@@ -308,10 +346,12 @@ class MyComponent(commands.Component):
 
     @commands.command()
     async def claire(self, ctx: commands.Context):
+        """say "hi" to Claire!"""
         await ctx.reply("Wavegie")
 
     @commands.command(aliases=["discord", "community"])
     async def socials(self, ctx: commands.Context) -> None:
+        """get all active social links"""
         await ctx.send("discord.gg/DBaUMawHhJ")
         #await ctx.send("other social") --- to print on new lines
 

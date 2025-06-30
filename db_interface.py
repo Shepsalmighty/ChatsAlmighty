@@ -82,7 +82,10 @@ class DataBaseInterface:
 
     async def clear_inbox(self, user_id):
         async with self.pool.acquire() as con:
+            count = await con.fetchone("SELECT COUNT (*) FROM messages WHERE receiver_id = ?", user_id)
             await con.execute("DELETE FROM messages WHERE receiver_id = ?", user_id)
+
+            return count[0]
 
 
     async def song_req(self, user:str, song:str) -> None:
