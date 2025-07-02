@@ -30,11 +30,15 @@ class GenCmds(commands.Component):
         self.derp_count = 0
         self.leviosah_trigger = 5
         self.leviosah_count = 0
-        # self.file_path = "bot_db.db"
-        # self.db = DB(self.file_path, self.bot.pool)
         self.seen_users = set()
         self.lurkers = set()
         # self.player = Player(self.onPlaybackFinished)
+
+    # #TODO song request command
+    # #TODO:
+    # # if the bot detects that the song contains vocals, the bot responds to the request,
+    # # asking if the vocals should be disabled. if the requester confirms,
+    # # you use another neuronal network to remove the vocals and play clean-version
 
     def onPlaybackFinished(self, played_url: str):
         """ clear the played song from DB

@@ -6,9 +6,6 @@ class ModCmds(commands.Component):
         # Passing args is not required...
         # We pass bot here as an example...
         self.bot = bot
-        # self.file_path = "bot_db.db"
-        # self.db = DB(self.file_path, self.bot.pool)
-        # self.db = self.bot.DB
 
     @commands.is_owner()
     async def clear(self, ctx: commands.Context):
