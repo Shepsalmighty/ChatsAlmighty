@@ -91,7 +91,7 @@ class DataBaseInterface:
     async def song_req(self, user:str, song:str) -> None:
         async with self.pool.acquire() as con:
             async with con.transaction():
-                song_count = await con.fetchone('SELECT COUNT (*) FROM song_request WHERE sender_id = ?', (user,))
+                song_count = await con.fetchone('SELECT COUNT (*) FROM song_request WHERE user_id = ?', (user,))
                 if song_count[0] < 9:
                     await con.execute(
                         'INSERT INTO song_request (`user_id`, `song_request`) VALUES (?,?)',
@@ -105,8 +105,8 @@ class DataBaseInterface:
 
     async def clear_songs(self):
         async with self.pool.acquire() as con:
-            await con.execute('DELETE FROM song_requests')
+            await con.execute('DELETE FROM song_request')
 
     async def remove(self, user_id:str):
         async with self.pool.acquire() as con:
-            con.execute('DELETE FROM song_requests WHERE user = (?) ORDER BY row_id ASC LIMIT 1', (user_id,))
+            con.execute('DELETE FROM song_request WHERE user_id = (?) ORDER BY row_id ASC LIMIT 1', (user_id,))

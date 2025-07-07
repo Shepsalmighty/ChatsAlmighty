@@ -1,5 +1,8 @@
+from unicodedata import category
+
 import twitchio
 from twitchio.ext import commands
+from song_req import YoutubeAudio
 
 # from db_interface import DataBaseInterface as DB
 
@@ -34,11 +37,15 @@ class GenCmds(commands.Component):
         self.lurkers = set()
         # self.player = Player(self.onPlaybackFinished)
 
+
     # #TODO song request command
     # #TODO:
     # # if the bot detects that the song contains vocals, the bot responds to the request,
     # # asking if the vocals should be disabled. if the requester confirms,
     # # you use another neuronal network to remove the vocals and play clean-version
+
+    #TODO - command: !LMGTFY or !LMKTFY - searches the arg and returns the summary/explanation
+
 
     def onPlaybackFinished(self, played_url: str):
         """ clear the played song from DB
@@ -59,12 +66,12 @@ class GenCmds(commands.Component):
     @commands.command(aliases=["song_req", "song_request", "s_r"])
     async def sr(self, ctx:commands.Context, song: str) -> None:
         """request a song from a youtube link from browser: !sr https://www.youtube.com/watch?v=....."""
-        #INFO youtube may shorten link so if check could break/cause issues
-        #TODO use yt_dlp to check link is allowable yt link
-        if not song.startswith("https://www.youtube.com/watch?v="):
-            return
+        song_object = YoutubeAudio(song)
         user = ctx.author.id
-        await self.bot.db.song_req(user=user, song=song)
+        #TODO catch duplicate song requests and reply to requester in chat
+        if song_object.info is not None:
+            # print(song_object.info.model_dump_json(indent=4))
+            await self.bot.db.song_req(user=user, song=song)
 
     @commands.command(aliases=["undo", "cancel", "remove"])
     async def remove_last(self, ctx:commands.Context):

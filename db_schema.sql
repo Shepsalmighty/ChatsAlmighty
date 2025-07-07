@@ -17,7 +17,7 @@ CREATE TABLE IF NOT EXISTS song_request(
             row_id INTEGER PRIMARY KEY AUTOINCREMENT,
             user_id INTEGER NOT NULL,
             song_request TEXT NOT NULL,
-            UNIQUE(song_request),
+            UNIQUE(user_id, song_request),
             FOREIGN KEY (user_id) REFERENCES user_perms(user_id));
 
 

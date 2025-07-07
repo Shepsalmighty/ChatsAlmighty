@@ -43,6 +43,7 @@ class Bot(commands.Bot):
         # await self.add_component(MyComponent(self))
         await self.load_module("gen_cmds")
         await self.load_module("mod_cmds")
+
         sub = eventsub.ChatMessageSubscription(broadcaster_user_id=getenv("BOT_ID"), user_id=getenv("BOT_ID"))
         await self.subscribe_websocket(sub)
 
