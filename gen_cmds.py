@@ -1,3 +1,4 @@
+import asyncio
 from datetime import datetime, timedelta
 from unicodedata import category
 
@@ -92,8 +93,11 @@ class GenCmds(commands.Component):
             enough_subs = song_object.info.channel_follower_count > GenCmds.MIN_SUBSCRIBERS
 
             if song_len_ok and (older_than_a_week or enough_subs):
+                loop = asyncio.get_event_loop()
+                no_vocals = not await loop.run_in_executor(self.bot.executor,
+                                     song_object.contains_vocals,
+                                     GenCmds.ESTIMATOR_THRESHOLD)
                 #INFO below is where the audio is downloaded
-                no_vocals = not song_object.contains_vocals(GenCmds.ESTIMATOR_THRESHOLD)
                 if no_vocals:
                     await self.bot.db.song_req(user=user, song=song)
                     await ctx.reply("song added to queue")
