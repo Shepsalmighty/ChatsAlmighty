@@ -32,6 +32,7 @@ class GenCmds(commands.Component):
     MAX_VID_LEN = 600 #seconds
     MIN_SUBSCRIBERS = 100
     ESTIMATOR_THRESHOLD = 0.2
+    MIN_VID_AGE = 7
     def __init__(self, bot: commands.Bot):
         # Passing args is not required...
         # We pass bot here as an example...
@@ -74,7 +75,9 @@ class GenCmds(commands.Component):
     @has_perm()
     @commands.command(aliases=["song_req", "song_request", "s_r"])
     async def sr(self, ctx:commands.Context, song: str) -> None:
-        """request a song from a youtube link from browser: !sr https://www.youtube.com/watch?v=....."""
+        """request a song from a youtube link from browser: !sr https://www.youtube.com/watch?v=.....
+         songs are auto-rejected if they are too long, have lyrics or the channel is too new.
+         pester the streamer if you want your song heard"""
         user = ctx.author.id
         song_object = YoutubeAudio(song)
 
@@ -84,16 +87,20 @@ class GenCmds(commands.Component):
                 return
 
             song_len_ok = song_object.info.duration < GenCmds.MAX_VID_LEN
-            older_than_a_week = song_object.info.upload_date < (datetime.now() - timedelta(days=7))
+            older_than_a_week = (song_object.info.upload_date <
+                                 (datetime.now() - timedelta(days=GenCmds.MIN_VID_AGE)))
             enough_subs = song_object.info.channel_follower_count > GenCmds.MIN_SUBSCRIBERS
 
             if song_len_ok and (older_than_a_week or enough_subs):
-                #INFO this is where the audio is downloaded -- line 92
+                #INFO below is where the audio is downloaded
                 no_vocals = not song_object.contains_vocals(GenCmds.ESTIMATOR_THRESHOLD)
                 if no_vocals:
                     await self.bot.db.song_req(user=user, song=song)
+                    await ctx.reply("song added to queue")
                     return
-
+                await ctx.reply("your song was rejected. reason: song has lyrics")
+            else:
+                await ctx.reply("your song was rejected. reason: too long (10min max) or video too new/unknown")
             self.rejected_songs.add((ctx.author.name, song))
 
     @commands.command()

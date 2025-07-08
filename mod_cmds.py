@@ -1,5 +1,7 @@
 import twitchio
 from twitchio.ext import commands
+from twitchio.ext.commands import is_owner
+
 
 class ModCmds(commands.Component):
     def __init__(self, bot: commands.Bot):
