@@ -26,7 +26,12 @@ def has_perm():
 
     return commands.guard(predicate)
 
+
+
 class GenCmds(commands.Component):
+    MAX_VID_LEN = 600 #seconds
+    MIN_SUBSCRIBERS = 100
+    ESTIMATOR_THRESHOLD = 0.2
     def __init__(self, bot: commands.Bot):
         # Passing args is not required...
         # We pass bot here as an example...
@@ -39,6 +44,7 @@ class GenCmds(commands.Component):
         self.lurkers = set()
         # self.player = Player(self.onPlaybackFinished)
         self.rejected_songs = set()
+
 
 
     # #TODO song request command
@@ -77,15 +83,14 @@ class GenCmds(commands.Component):
                 await self.bot.db.song_req(user=user, song=song)
                 return
 
-            song_len_ok = song_object.info.duration < 600
+            song_len_ok = song_object.info.duration < GenCmds.MAX_VID_LEN
             older_than_a_week = song_object.info.upload_date < (datetime.now() - timedelta(days=7))
-            enough_subs = song_object.info.channel_follower_count > 100
+            enough_subs = song_object.info.channel_follower_count > GenCmds.MIN_SUBSCRIBERS
 
             if song_len_ok and (older_than_a_week or enough_subs):
-                no_vocals = not song_object.contains_vocals(0.2)
+                #INFO this is where the audio is downloaded -- line 92
+                no_vocals = not song_object.contains_vocals(GenCmds.ESTIMATOR_THRESHOLD)
                 if no_vocals:
-            #TODO catch duplicate song requests and reply to requester in chat
-                # print(song_object.info.model_dump_json(indent=4))
                     await self.bot.db.song_req(user=user, song=song)
                     return
 
