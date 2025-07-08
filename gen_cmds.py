@@ -1,10 +1,12 @@
+from datetime import datetime, timedelta
 from unicodedata import category
 
 import twitchio
 from twitchio.ext import commands
 from song_req import YoutubeAudio
 
-# from db_interface import DataBaseInterface as DB
+
+
 
 def has_perm():
     async def predicate(ctx: commands.Context) -> bool:
@@ -36,6 +38,7 @@ class GenCmds(commands.Component):
         self.seen_users = set()
         self.lurkers = set()
         # self.player = Player(self.onPlaybackFinished)
+        self.rejected_songs = set()
 
 
     # #TODO song request command
@@ -66,12 +69,38 @@ class GenCmds(commands.Component):
     @commands.command(aliases=["song_req", "song_request", "s_r"])
     async def sr(self, ctx:commands.Context, song: str) -> None:
         """request a song from a youtube link from browser: !sr https://www.youtube.com/watch?v=....."""
-        song_object = YoutubeAudio(song)
         user = ctx.author.id
-        #TODO catch duplicate song requests and reply to requester in chat
+        song_object = YoutubeAudio(song)
+
         if song_object.info is not None:
-            # print(song_object.info.model_dump_json(indent=4))
-            await self.bot.db.song_req(user=user, song=song)
+            if ctx.author == self.bot.user:
+                await self.bot.db.song_req(user=user, song=song)
+                return
+
+            song_len_ok = song_object.info.duration < 600
+            older_than_a_week = song_object.info.upload_date < (datetime.now() - timedelta(days=7))
+            enough_subs = song_object.info.channel_follower_count > 100
+
+            if song_len_ok and (older_than_a_week or enough_subs):
+                no_vocals = not song_object.contains_vocals(0.2)
+                if no_vocals:
+            #TODO catch duplicate song requests and reply to requester in chat
+                # print(song_object.info.model_dump_json(indent=4))
+                    await self.bot.db.song_req(user=user, song=song)
+                    return
+
+            self.rejected_songs.add((ctx.author.name, song))
+
+    @commands.command()
+    async def show_rejected(self, ctx: commands.Context):
+        for song in self.rejected_songs:
+            notify_parts: list[str] = []
+            notify_parts.append(f"{song[0]} ({song[1]})")
+            notify = (f"there are songs from: " +
+                      ", ".join(notify_parts) )
+
+            if len(notify) < 450:
+                await ctx.send(notify)
 
     @commands.command(aliases=["undo", "cancel", "remove"])
     async def remove_last(self, ctx:commands.Context):
