@@ -23,7 +23,7 @@ load_dotenv()
 # #TODO switch over from self botting to bot account
 
 class Bot(commands.Bot):
-    def __init__(self, *, token_database: asqlite.Pool, pool: asqlite.Pool, executor) -> None:
+    def __init__(self, *, token_database: asqlite.Pool, pool: asqlite.Pool) -> None:
         self.token_database = token_database
         super().__init__(
             client_id=getenv("CLIENT_ID"),
@@ -37,7 +37,7 @@ class Bot(commands.Bot):
         self.pool = pool
         self.file_path = "bot_db.db"
         self.db = DB(self.file_path, self.pool)
-        self.executor = executor
+
 
 
     async def setup_hook(self) -> None:
@@ -118,19 +118,17 @@ class Bot(commands.Bot):
 
 
 def main() -> None:
-    with ThreadPoolExecutor() as ex:
-        twitchio.utils.setup_logging(level=logging.INFO)
+    twitchio.utils.setup_logging(level=logging.INFO)
+    async def runner() -> None:
+        async with (asqlite.create_pool("tokens.db") as tdb,
+            asqlite.create_pool("bot_db.db") as pool, Bot(token_database=tdb, pool=pool) as bot):
+            await bot.setup_database()
+            await bot.start()
 
-        async def runner() -> None:
-            async with (asqlite.create_pool("tokens.db") as tdb,
-                asqlite.create_pool("bot_db.db") as pool, Bot(token_database=tdb, pool=pool, executor=ex) as bot):
-                await bot.setup_database()
-                await bot.start()
-
-        try:
-            asyncio.run(runner())
-        except KeyboardInterrupt:
-            LOGGER.warning("Shutting down due to KeyboardInterrupt...")
+    try:
+        asyncio.run(runner())
+    except KeyboardInterrupt:
+        LOGGER.warning("Shutting down due to KeyboardInterrupt...")
 
 
 if __name__ == "__main__":

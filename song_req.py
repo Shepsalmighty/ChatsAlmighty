@@ -29,7 +29,7 @@ class Metadata(BaseModel):
     webpage_url: HttpUrl
     categories: list[str]
     tags: list[str]
-    comment_count: conint(ge=0)
+    comment_count: conint(ge=0) | None
     like_count: conint(ge=0)
     channel: constr(min_length=1)
     channel_follower_count: conint(ge=0)

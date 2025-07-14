@@ -5,8 +5,9 @@ from unicodedata import category
 import twitchio
 from twitchio.ext import commands
 from song_req import YoutubeAudio
+import mpv
 
-
+#TODO: figure out a function to work "code cuck" in to the project
 
 
 def has_perm():
@@ -40,12 +41,13 @@ class GenCmds(commands.Component):
         self.bot = bot
         self.derp_trigger = 69
         self.derp_count = 0
-        self.leviosah_trigger = 5
+        self.leviosah_trigger = 10
         self.leviosah_count = 0
         self.seen_users = set()
-        self.lurkers = set()
+        self.those_who_lurk = set()
         # self.player = Player(self.onPlaybackFinished)
         self.rejected_songs = set()
+        self.player = mpv.MPV()
 
 
 
@@ -57,13 +59,25 @@ class GenCmds(commands.Component):
 
     #TODO - command: !LMGTFY or !LMKTFY - searches the arg and returns the summary/explanation
 
-
-    def onPlaybackFinished(self, played_url: str):
+    @commands.command()
+    async def play(self, ctx:commands.Context):
         """ clear the played song from DB
             check if there are more songs in queue
             requests the new song to play"""
         # self.player.play_song(await db_interface.get_song[0])
-        pass
+        songs = await self.bot.db.song_count()
+        if songs == 0:
+            await ctx.send("no songs in queue")
+            return
+        #song 0-2 == row_id, user_id, song_request
+        song = await self.bot.db.get_song()
+        print(song)
+
+        #TODO figure out how to pull username from user_id and song title from Yt_object
+        await ctx.send(f"now playing {song[1]} requested by {song[1].username}")
+
+#TODO skip song option times out the user who requested the skipped song for the len
+# of the song they req - GROUP COMMAND commands.group() would be skip and skip.command() would include the timeout
 
     @has_perm()
     @commands.command(aliases=["hello", "howdy", "how_are_ya", "rainbow_dicks"])
@@ -71,6 +85,11 @@ class GenCmds(commands.Component):
         """if you need to be told what this does even i can't help you"""
         # perms_list.append(ctx.chatter.name)
         await ctx.reply(f"Hello, World! Oh, and you {ctx.chatter.mention}")
+
+    @commands.command()
+    async def code_cuck(self, ctx:commands.Context):
+        await ctx.send(f"@{ctx.channel.name} SIT")
+
 
 
     @has_perm()
@@ -93,8 +112,8 @@ class GenCmds(commands.Component):
             enough_subs = song_object.info.channel_follower_count > GenCmds.MIN_SUBSCRIBERS
 
             if song_len_ok and (older_than_a_week or enough_subs):
-                loop = asyncio.get_event_loop()
-                no_vocals = not await loop.run_in_executor(self.bot.executor,
+
+                no_vocals = not await asyncio.to_thread(
                                      song_object.contains_vocals,
                                      GenCmds.ESTIMATOR_THRESHOLD)
                 #INFO below is where the audio is downloaded
@@ -145,14 +164,14 @@ class GenCmds(commands.Component):
 
     @commands.command(aliases=["mopLurk"])
     async def lurk(self, ctx: commands.Context):
-        self.lurkers.add(ctx.author.name)
+        self.those_who_lurk.add(ctx.author.name)
 
     @commands.command()
     async def lurkers(self, ctx: commands.Context):
-        if len(self.lurkers) == 0:
+        if len(self.those_who_lurk) == 0:
             await ctx.send("No one hiding in the bushes")
             return
-        await ctx.send("Lurkers: " + ", ".join(self.lurkers))
+        await ctx.send("Lurkers: " + ", ".join(self.those_who_lurk))
 
     @commands.command(aliases=["messages", "msgs"])
     async def inbox(self, ctx: commands.Context):
@@ -223,7 +242,7 @@ class GenCmds(commands.Component):
     @commands.Component.listener("event_message")
     async def seen_chatter(self, payload: twitchio.ChatMessage):
         #if chatter was lurking, remove from lurker list
-        self.lurkers.discard(payload.chatter.name)
+        self.those_who_lurk.discard(payload.chatter.name)
 
         if payload.chatter.id in self.seen_users:
             return

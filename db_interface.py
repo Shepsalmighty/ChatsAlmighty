@@ -98,10 +98,21 @@ class DataBaseInterface:
                         # (msg.chatter.id, msg.text))
                         (user, song))
 
-#TODO finish once player is done
+    async def song_count(self):
+        async with self.pool.acquire() as con:
+            num_songs = await con.fetchone('SELECT COUNT(*) song_request FROM song_request')
+            return num_songs[0]
+
+#TODO finish
     async def get_song(self):
         async with self.pool.acquire() as con:
-            pass
+            link = await con.fetchone('SELECT row_id, user_id, song_request FROM song_request '
+                                      'ORDER BY row_id ASC LIMIT 1')
+            return link
+
+    async def delete_one(self, row_id):
+        async with self.pool.acquire() as con:
+            await con.execute('DELETE FROM song_request WHERE row_id = ?', row_id)
 
     async def clear_songs(self):
         async with self.pool.acquire() as con:
