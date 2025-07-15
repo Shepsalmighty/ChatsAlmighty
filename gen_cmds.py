@@ -48,6 +48,7 @@ class GenCmds(commands.Component):
         # self.player = Player(self.onPlaybackFinished)
         self.rejected_songs = set()
         self.player = mpv.MPV()
+        self.yt = YoutubeAudio
 
 
 
@@ -59,25 +60,48 @@ class GenCmds(commands.Component):
 
     #TODO - command: !LMGTFY or !LMKTFY - searches the arg and returns the summary/explanation
 
+    #TODO Sheps, I think I have a suggestion for the bot. Normally when I want to write something
+    # to Sea, I type @Sea and press tab... But that of course doesn't work, if Sea isn't here.
+    # Can we come up with something smart, so I don't have to remember how the name is spelled?
+    def _play(self, audio_file) -> None:
+        self.player.play(filename=audio_file)
+        # self.player.wait_for_playback()
+        # self.player.stop
+
+
     @commands.command()
     async def play(self, ctx:commands.Context):
         """ clear the played song from DB
             check if there are more songs in queue
             requests the new song to play"""
-        # self.player.play_song(await db_interface.get_song[0])
-        songs = await self.bot.db.song_count()
-        if songs == 0:
+        #request 0-2 == row_id, user_id, song_request
+        request = await self.bot.db.get_song()
+
+        if request is None:
             await ctx.send("no songs in queue")
             return
-        #song 0-2 == row_id, user_id, song_request
-        song = await self.bot.db.get_song()
-        print(song)
 
-        #TODO figure out how to pull username from user_id and song title from Yt_object
-        await ctx.send(f"now playing {song[1]} requested by {song[1].username}")
+        #get username by creating user object from user_id pulled from db and calling name attr
+        user_name_from_id = (await ctx.bot.fetch_user(id=request[1])).display_name
+        #create YoutubeAudio object
+        vid_obj = self.yt.get(request[2])
+
+        await ctx.send(f"now playing {vid_obj.info.title} requested by {user_name_from_id}")
+        file_path = await asyncio.to_thread(lambda: str(vid_obj.audio_file))
+        await asyncio.to_thread(self._play, file_path)
+        # remove song from db/queue
+        await self.bot.db.delete_one(request[0])
+        #TODO need a callback so !play isn't required for individual songs
+
 
 #TODO skip song option times out the user who requested the skipped song for the len
 # of the song they req - GROUP COMMAND commands.group() would be skip and skip.command() would include the timeout
+
+    @commands.command(aliases=["q", "songs", "song_list", "song_queue"])
+    async def queue(self, ctx: commands.Context):
+        count = await self.bot.db.song_count()
+        await ctx.send(f"{count} songs in queue")
+
 
     @has_perm()
     @commands.command(aliases=["hello", "howdy", "how_are_ya", "rainbow_dicks"])
@@ -91,15 +115,15 @@ class GenCmds(commands.Component):
         await ctx.send(f"@{ctx.channel.name} SIT")
 
 
-
     @has_perm()
+    @commands.cooldown(rate=1, per=120, key=commands.BucketType.chatter)
     @commands.command(aliases=["song_req", "song_request", "s_r"])
     async def sr(self, ctx:commands.Context, song: str) -> None:
         """request a song from a youtube link from browser: !sr https://www.youtube.com/watch?v=.....
          songs are auto-rejected if they are too long, have lyrics or the channel is too new.
          pester the streamer if you want your song heard"""
         user = ctx.author.id
-        song_object = YoutubeAudio(song)
+        song_object = YoutubeAudio.get(song)
 
         if song_object.info is not None:
             if ctx.author == self.bot.user:
@@ -112,11 +136,11 @@ class GenCmds(commands.Component):
             enough_subs = song_object.info.channel_follower_count > GenCmds.MIN_SUBSCRIBERS
 
             if song_len_ok and (older_than_a_week or enough_subs):
-
+                # INFO below is where the audio is downloaded
                 no_vocals = not await asyncio.to_thread(
                                      song_object.contains_vocals,
                                      GenCmds.ESTIMATOR_THRESHOLD)
-                #INFO below is where the audio is downloaded
+
                 if no_vocals:
                     await self.bot.db.song_req(user=user, song=song)
                     await ctx.reply("song added to queue")
@@ -126,7 +150,7 @@ class GenCmds(commands.Component):
                 await ctx.reply("your song was rejected. reason: too long (10min max) or video too new/unknown")
             self.rejected_songs.add((ctx.author.name, song))
 
-    @commands.command()
+    @commands.command(aliases=["reject", "rejected"])
     async def show_rejected(self, ctx: commands.Context):
         for song in self.rejected_songs:
             notify_parts: list[str] = []

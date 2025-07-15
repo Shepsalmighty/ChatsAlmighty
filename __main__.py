@@ -107,6 +107,9 @@ class Bot(commands.Bot):
             return
         # Example: As an example if a guard fails we can send a default message back...
         if isinstance(error, commands.GuardFailure):
+            if isinstance(error, commands.CommandOnCooldown):
+                await ctx.reply(f"{ctx.command.qualified_name} on cooldown for {ctx.author.name},  {int(error.remaining)}s until next use")
+                print(error)
             return
 
         # For all unhandled errors, we should log them so we know what went wrong...

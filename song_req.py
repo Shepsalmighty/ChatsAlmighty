@@ -4,7 +4,8 @@ import threading
 from datetime import datetime
 from functools import cached_property, lru_cache
 from pathlib import Path
-from typing import Annotated, Literal
+from typing import Annotated, Literal, Any
+import re
 
 import ffmpeg
 import silero_vad as vad
@@ -55,7 +56,25 @@ class YoutubeAudio:
 
     __VAD_MODEL: vad.model.OnnxWrapper = vad.load_silero_vad()
     """ Machine-learning model to detect voice activity in audio data """
+    __VIDEO_ID_REGEX: re.Pattern = re.compile(r"v=(?P<video_id>[^&]+)")
+    """ Regex pattern to extract a video id from url """
 
+    __VIDEO_ID_CACHE: dict[str, Any] = {}
+    """ Cache of YoutubeAudio instances (identified by video-id) """
+
+    @staticmethod
+    def get(url: str) -> 'YoutubeAudio':
+        """ Creates or reuses a previously created YoutubeVideo instance for a specified url
+
+        .. note:: the first video id in the url will be used to cache instances
+
+        :param url: Youtube video URL
+        :return: Newly created or reused YoutubeVideo instance
+        """
+        video_id_match: re.Match | None = YoutubeAudio.__VIDEO_ID_REGEX.search(url)
+        video_id: str = video_id_match["video_id"] if (video_id_match is not None) else url
+        with YoutubeAudio.__CACHE_LOCK:
+            return YoutubeAudio.__VIDEO_ID_CACHE.setdefault(video_id, YoutubeAudio(url))
     def __init__(self, url: str):
         """
         :param url: Youtube video URL
