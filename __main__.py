@@ -128,6 +128,7 @@ def main() -> None:
             await bot.setup_database()
             await bot.start()
 
+
     try:
         asyncio.run(runner())
     except KeyboardInterrupt:

@@ -6,6 +6,7 @@ import twitchio
 from twitchio.ext import commands
 from song_req import YoutubeAudio
 import mpv
+from functools import partial
 
 #TODO: figure out a function to work "code cuck" in to the project
 
@@ -45,14 +46,15 @@ class GenCmds(commands.Component):
         self.leviosah_count = 0
         self.seen_users = set()
         self.those_who_lurk = set()
-        # self.player = Player(self.onPlaybackFinished)
         self.rejected_songs = set()
         self.player = mpv.MPV()
         self.yt = YoutubeAudio
+        self.loop = asyncio.get_running_loop()
+        self.player.observe_property("track-list", self.schedule_callback)
+        self.has_called = False
+        self.stop_flag = False
 
 
-
-    # #TODO song request command
     # #TODO:
     # # if the bot detects that the song contains vocals, the bot responds to the request,
     # # asking if the vocals should be disabled. if the requester confirms,
@@ -65,8 +67,37 @@ class GenCmds(commands.Component):
     # Can we come up with something smart, so I don't have to remember how the name is spelled?
     def _play(self, audio_file) -> None:
         self.player.play(filename=audio_file)
-        # self.player.wait_for_playback()
-        # self.player.stop
+
+    def _skip(self):
+        self.player.stop()
+
+    def schedule_callback(self, *t):
+        asyncio.run_coroutine_threadsafe(self._callback(*t), loop=self.loop)
+
+
+    async def _callback(self, event, tracks):
+        if not self.has_called:
+            self.has_called = True
+            return
+
+        if not self.stop_flag:
+            print(f"in callback{tracks}")
+            if tracks:
+                return
+            await self.play(self.ctx)
+        return
+
+
+    @commands.is_owner()
+    @commands.command()
+    async def skip(self, ctx:commands.Context):
+        self.player.stop()
+
+    @commands.is_owner()
+    @commands.command()
+    async def stop(self, ctx:commands.Context):
+        self.stop_flag = True
+        self.player.stop()
 
 
     @commands.command()
@@ -74,6 +105,9 @@ class GenCmds(commands.Component):
         """ clear the played song from DB
             check if there are more songs in queue
             requests the new song to play"""
+        self.stop_flag = False
+        self.ctx = ctx
+
         #request 0-2 == row_id, user_id, song_request
         request = await self.bot.db.get_song()
 
@@ -91,7 +125,7 @@ class GenCmds(commands.Component):
         await asyncio.to_thread(self._play, file_path)
         # remove song from db/queue
         await self.bot.db.delete_one(request[0])
-        #TODO need a callback so !play isn't required for individual songs
+        #TODO need a callback so !play isn't required for individual songs -- self.player.observe_property
 
 
 #TODO skip song option times out the user who requested the skipped song for the len
@@ -116,7 +150,7 @@ class GenCmds(commands.Component):
 
 
     @has_perm()
-    @commands.cooldown(rate=1, per=120, key=commands.BucketType.chatter)
+    @commands.cooldown(rate=1, per=60, key=commands.BucketType.chatter)
     @commands.command(aliases=["song_req", "song_request", "s_r"])
     async def sr(self, ctx:commands.Context, song: str) -> None:
         """request a song from a youtube link from browser: !sr https://www.youtube.com/watch?v=.....
