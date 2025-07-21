@@ -17,9 +17,16 @@ CREATE TABLE IF NOT EXISTS song_request(
             row_id INTEGER PRIMARY KEY AUTOINCREMENT,
             user_id INTEGER NOT NULL,
             song_request TEXT NOT NULL,
+            is_whale INTEGER NOT NULL,
             UNIQUE(user_id, song_request),
             FOREIGN KEY (user_id) REFERENCES user_perms(user_id));
 
+CREATE TABLE IF NOT EXISTS whale_request(
+            row_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            song_request TEXT NOT NULL,
+            UNIQUE(user_id, song_request),
+            FOREIGN KEY (user_id) REFERENCES user_perms(user_id));
 
 --create indexes for performance on often queried fields:
 CREATE INDEX IF NOT EXISTS idx_user_id ON user_perms(user_id, has_perms);

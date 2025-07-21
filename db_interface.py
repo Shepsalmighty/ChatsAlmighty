@@ -4,6 +4,8 @@ import asqlite
 from contextlib import closing
 
 class DataBaseInterface:
+    SONG_MAX = [10, 5] #10 regular requests, 5 channel point redeem slots
+
 
     def __init__(self, file_path, pool):
         # self.channel = target_channel
@@ -88,27 +90,43 @@ class DataBaseInterface:
             return count[0]
 
 
-    async def song_req(self, user:str, song:str) -> None:
+    async def song_req(self, user:str, song:str, whale: int) -> None:
         async with self.pool.acquire() as con:
             async with con.transaction():
-                song_count = await con.fetchone('SELECT COUNT (*) FROM song_request WHERE user_id = ?', (user,))
-                if song_count[0] < 9:
-                    await con.execute(
-                        'INSERT INTO song_request (`user_id`, `song_request`) VALUES (?,?)',
-                        # (msg.chatter.id, msg.text))
-                        (user, song))
+                song_count = await self.song_count(user, whale)
 
-    async def song_count(self):
+                if song_count < self.SONG_MAX[whale]:
+                    await con.execute(
+                        'INSERT INTO song_request (`user_id`, `song_request`, is_whale) VALUES (?,?,?)',
+                        (user, song, whale))
+
+
+    async def song_count(self, user:str, whale: int):
+        async with self.pool.acquire() as con:
+            num_songs = await con.fetchone('SELECT COUNT (*) FROM song_request WHERE user_id = ? AND is_whale = ?',
+                                           (user, whale))
+            return num_songs[0]
+
+
+    async def queue_len(self):
         async with self.pool.acquire() as con:
             num_songs = await con.fetchone('SELECT COUNT(*) song_request FROM song_request')
             return num_songs[0]
 
-#TODO finish
+
     async def get_song(self):
         async with self.pool.acquire() as con:
             link = await con.fetchone('SELECT row_id, user_id, song_request FROM song_request '
-                                      'ORDER BY row_id ASC LIMIT 1')
+                                      'ORDER BY is_whale DESC, row_id ASC LIMIT 1')
             return link
+
+### ORDER BY is_whale DESC , rowid ASC LIMIT 1;
+
+    # async def get_whale_song(self):
+    #     async with self.pool.acquire() as con:
+    #         link = await con.fetchone('SELECT row_id, user_id, song_request FROM whale_request '
+    #                                   'ORDER BY row_id ASC LIMIT 1')
+    #         return link
 
     async def delete_one(self, row_id):
         async with self.pool.acquire() as con:

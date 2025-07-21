@@ -55,6 +55,11 @@ class GenCmds(commands.Component):
         self.stop_flag = False
 
 
+    #TODO implement whale_requests channel point redeem song req with priority // consider renaming song_req
+    # to peasant_req
+
+    #TODO fix lurk cmd
+
     # #TODO:
     # # if the bot detects that the song contains vocals, the bot responds to the request,
     # # asking if the vocals should be disabled. if the requester confirms,
@@ -64,7 +69,8 @@ class GenCmds(commands.Component):
 
     #TODO Sheps, I think I have a suggestion for the bot. Normally when I want to write something
     # to Sea, I type @Sea and press tab... But that of course doesn't work, if Sea isn't here.
-    # Can we come up with something smart, so I don't have to remember how the name is spelled?
+    # Can we come up with something smart, so I don't have to remember how the name his spelled?
+    # -- add username table for easy look up "WHERE username LIKE '@Sea%';"
     def _play(self, audio_file) -> None:
         self.player.play(filename=audio_file)
 
@@ -125,7 +131,9 @@ class GenCmds(commands.Component):
         await asyncio.to_thread(self._play, file_path)
         # remove song from db/queue
         await self.bot.db.delete_one(request[0])
-        #TODO need a callback so !play isn't required for individual songs -- self.player.observe_property
+
+
+
 
 
 #TODO skip song option times out the user who requested the skipped song for the len
@@ -133,7 +141,7 @@ class GenCmds(commands.Component):
 
     @commands.command(aliases=["q", "songs", "song_list", "song_queue"])
     async def queue(self, ctx: commands.Context):
-        count = await self.bot.db.song_count()
+        count = await self.bot.db.queue_len()
         await ctx.send(f"{count} songs in queue")
 
 
@@ -144,7 +152,7 @@ class GenCmds(commands.Component):
         # perms_list.append(ctx.chatter.name)
         await ctx.reply(f"Hello, World! Oh, and you {ctx.chatter.mention}")
 
-    @commands.command()
+    @commands.command(aliases=["sit"])
     async def code_cuck(self, ctx:commands.Context):
         await ctx.send(f"@{ctx.channel.name} SIT")
 
@@ -159,9 +167,11 @@ class GenCmds(commands.Component):
         user = ctx.author.id
         song_object = YoutubeAudio.get(song)
 
+        whale_request = 0
+
         if song_object.info is not None:
             if ctx.author == self.bot.user:
-                await self.bot.db.song_req(user=user, song=song)
+                await self.bot.db.song_req(user=user, song=song, whale=whale_request)
                 return
 
             song_len_ok = song_object.info.duration < GenCmds.MAX_VID_LEN
@@ -176,7 +186,56 @@ class GenCmds(commands.Component):
                                      GenCmds.ESTIMATOR_THRESHOLD)
 
                 if no_vocals:
-                    await self.bot.db.song_req(user=user, song=song)
+                    await self.bot.db.song_req(user=user, song=song, whale=whale_request)
+                    await ctx.reply("song added to queue")
+                    return
+                await ctx.reply("your song was rejected. reason: song has lyrics")
+            else:
+                await ctx.reply("your song was rejected. reason: too long (10min max) or video too new/unknown")
+            self.rejected_songs.add((ctx.author.name, song))
+
+#info test command to generate a custom point reward id maybe useful later
+    # @commands.is_owner()
+    # @commands.command()
+    # async def test_cmd(self, ctx:commands.Context):
+    #     reward = await ctx.broadcaster.create_custom_reward(title="whale_song", cost=10_000,
+    #                                                         prompt="request a song from a youtube link",
+    #                                                         redemptions_skip_queue=True)
+    #
+    #     print(reward.id)
+
+#TODO create whale song request channel point redeem
+
+    @commands.cooldown(rate=1, per=60, key=commands.BucketType.chatter)
+    @commands.reward_command(id="dc1514be-75a5-4d48-bde1-8da26bc193bd")
+    async def whale_req(self, ctx: commands.Context, song: str) -> None:
+        """jump to the front of the song_requests queue.
+         songs are auto-rejected if they are too long, have lyrics or the channel is too new.
+         pester the streamer if you want your song heard"""
+        print(ctx)
+        user = ctx.author.id
+        song_object = YoutubeAudio.get(song)
+
+        whale_request = 1
+
+        if song_object.info is not None:
+            if ctx.author == self.bot.user:
+                await self.bot.db.song_req(user=user, song=song, whale=whale_request)
+                return
+
+            song_len_ok = song_object.info.duration < GenCmds.MAX_VID_LEN
+            older_than_a_week = (song_object.info.upload_date <
+                                 (datetime.now() - timedelta(days=GenCmds.MIN_VID_AGE)))
+            enough_subs = song_object.info.channel_follower_count > GenCmds.MIN_SUBSCRIBERS
+
+            if song_len_ok and (older_than_a_week or enough_subs):
+                # INFO below is where the audio is downloaded
+                no_vocals = not await asyncio.to_thread(
+                    song_object.contains_vocals,
+                    GenCmds.ESTIMATOR_THRESHOLD)
+
+                if no_vocals:
+                    await self.bot.db.song_req(user=user, song=song, whale=whale_request)
                     await ctx.reply("song added to queue")
                     return
                 await ctx.reply("your song was rejected. reason: song has lyrics")
@@ -210,7 +269,7 @@ class GenCmds(commands.Component):
         target = receiver.id
         await self.bot.db.leave_message(sender=sender, reciever=target, msg=msg)
 
-    @has_perm()
+
     @commands.command(aliases=["get_msg", "gm", "showfeet", "fwends"])
     async def getmsg(self, ctx:commands.Context, sender: twitchio.User):
         """get a message someone left you: !getmsg @username"""

@@ -32,7 +32,6 @@ class Bot(commands.Bot):
             owner_id=getenv("OWNER_ID"),
             prefix="!",
             case_insensitive=True
-
         )
         self.pool = pool
         self.file_path = "bot_db.db"
@@ -47,7 +46,11 @@ class Bot(commands.Bot):
         await self.load_module("mod_cmds")
 
         sub = eventsub.ChatMessageSubscription(broadcaster_user_id=getenv("BOT_ID"), user_id=getenv("BOT_ID"))
+        reward = eventsub.ChannelPointsRedeemAddSubscription(broadcaster_user_id=getenv("BOT_ID"))
+        accepted_reward = eventsub.ChannelPointsRedeemUpdateSubscription(broadcaster_user_id=getenv("BOT_ID"))
         await self.subscribe_websocket(sub)
+        await self.subscribe_websocket(reward, as_bot=False)
+        await self.subscribe_websocket(accepted_reward, as_bot=False)
 
         with open("db_schema.sql") as fp:
             async with self.pool.acquire() as conn:
