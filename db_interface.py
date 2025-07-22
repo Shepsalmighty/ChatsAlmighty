@@ -5,6 +5,9 @@ from contextlib import closing
 
 class DataBaseInterface:
     SONG_MAX = [10, 5] #10 regular requests, 5 channel point redeem slots
+    TOTAL_MSGS = 5 #total number of msgs one user can store in db
+    DIRECT_MSGS = 3 #total number of msgs to one person users can store in db
+    INBOX = 69 #total number of msgs a user can have sent to them
 
 
     def __init__(self, file_path, pool):
@@ -39,14 +42,20 @@ class DataBaseInterface:
                 msg_count = await con.fetchone('SELECT COUNT (*) FROM messages WHERE sender_id = ? AND receiver_id = ?',
                                                (sender, reciever))
                 inbox_full = await con.fetchone('SELECT COUNT (*) FROM messages WHERE receiver_id = ?', (reciever,))
-                #if await con.fetchone('SELECT COUNT (`sender_id`) FROM messages WHERE sender_id = ?', (sender,)) < 3:
-                if msg_sent[0] >= 5 or msg_count[0] >= 3 or inbox_full[0] >= 69:
+                if msg_sent[0] >= self.TOTAL_MSGS or msg_count[0] >= self.DIRECT_MSGS or inbox_full[0] >= self.INBOX:
                     return
+
                 else:
                     await con.execute(
                         'INSERT INTO messages (`sender_id`, `receiver_id`, `msg_text`) VALUES (?,?,?)',
                         (sender, reciever, " ".join(msg.split()[2:])))
 
+    async def lookup_name(self, name):
+        """get user_ids with partial username, sudo_autofill"""
+
+        async with self.pool.acquire() as con:
+            user_id = await con.fetchall("SELECT user_id FROM user_perms WHERE user_name LIKE '%' || ? || '%'", (name,))
+            return user_id
 
     async def notify(self, chatter_id):
         async with self.pool.acquire() as con:

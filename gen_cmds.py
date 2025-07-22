@@ -36,6 +36,7 @@ class GenCmds(commands.Component):
     MIN_SUBSCRIBERS = 100
     ESTIMATOR_THRESHOLD = 0.2
     MIN_VID_AGE = 7
+    MIN_USERNAME_LEN = 3
     def __init__(self, bot: commands.Bot):
         # Passing args is not required...
         # We pass bot here as an example...
@@ -53,12 +54,6 @@ class GenCmds(commands.Component):
         self.player.observe_property("track-list", self.schedule_callback)
         self.has_called = False
         self.stop_flag = False
-
-
-    #TODO implement whale_requests channel point redeem song req with priority // consider renaming song_req
-    # to peasant_req
-
-    #TODO fix lurk cmd
 
     # #TODO:
     # # if the bot detects that the song contains vocals, the bot responds to the request,
@@ -131,9 +126,6 @@ class GenCmds(commands.Component):
         await asyncio.to_thread(self._play, file_path)
         # remove song from db/queue
         await self.bot.db.delete_one(request[0])
-
-
-
 
 
 #TODO skip song option times out the user who requested the skipped song for the len
@@ -267,7 +259,26 @@ class GenCmds(commands.Component):
         msg = ctx.message.text
         sender = ctx.author.id
         target = receiver.id
+
         await self.bot.db.leave_message(sender=sender, reciever=target, msg=msg)
+
+    @leavemsg.error
+    async def leavemsg_error(self, payload: commands.CommandErrorPayload) -> None:
+
+        name = payload.context.message.text.split()[1].removeprefix("@")
+        sender = payload.context.author.id
+        message = payload.context.message.text
+
+        target = await self.bot.db.lookup_name(name=name)
+        if not target:
+            await payload.context.reply(f"Unknown user: {name}")
+            return
+        if len(target) > 1:
+            await payload.context.reply(f"Msg not sent: multiple users found with {name} name.")
+            return
+        target = target[0][0]
+
+        await self.bot.db.leave_message(sender=sender, reciever=target, msg=message)
 
 
     @commands.command(aliases=["get_msg", "gm", "showfeet", "fwends"])

@@ -10,6 +10,7 @@ CREATE TABLE IF NOT EXISTS messages(
 
 CREATE TABLE IF NOT EXISTS user_perms(
             user_id TEXT PRIMARY KEY,
+            user_name TEXT NOT NULL,
             has_perms INTEGER NOT NULL);
 
 CREATE TABLE IF NOT EXISTS song_request(

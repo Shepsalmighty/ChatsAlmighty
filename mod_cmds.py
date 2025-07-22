@@ -22,26 +22,25 @@ class ModCmds(commands.Component):
     @commands.is_elevated()
     @commands.command(aliases=["allow", "fine", "ok"])
     async def permit(self, ctx:commands.Context, *users: twitchio.User) -> None:
-        query = """INSERT INTO user_perms(user_id, has_perms)
-                VALUES(?,?)
+        query = """INSERT INTO user_perms(user_id, user_name, has_perms)
+                VALUES(?,?,?)
                 ON CONFLICT(user_id) DO UPDATE
                 SET has_perms = 1;"""
 
         user_names = ", ".join(u.name for u in users)
         await ctx.send(f"permissions granted to: {user_names}")
-        # perms_list.extend(u.name for u in users)
 
         async with self.bot.pool.acquire() as con:
-            values = [(u.id, 1) for u in users]
+            values = [(u.id, u.name, 1) for u in users] #1 used for True in our sqlite table
             await con.executemany(query, values)
-            # await con.execute(query, ((u.id for u in users), "True"))
+
 
     @commands.is_elevated()
     @commands.command(aliases=["fuck_you", "fuck_off", "get_rekt", "rekt", "fu"])
     async def deny(self, ctx: commands.Context, *users: twitchio.User) -> None:
         sql_upsert = """
-        INSERT INTO user_perms (user_id, has_perms)
-        VALUES (?, 0)
+        INSERT INTO user_perms (user_id, user_name, has_perms)
+        VALUES (?, ?, ?)
         ON CONFLICT(user_id) DO UPDATE
         SET has_perms = 0;
         """
@@ -49,7 +48,7 @@ class ModCmds(commands.Component):
         user_names = ", ".join(u.name for u in users)
         await ctx.send(f"{user_names} got rekt")
 
-        params = [(u.id,) for u in users]
+        params = [(u.id, u.name, 0) for u in users]
 
         async with self.bot.pool.acquire() as con:
             await con.executemany(sql_upsert, params)
