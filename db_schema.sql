@@ -6,8 +6,7 @@ CREATE TABLE IF NOT EXISTS messages(
             uid INTEGER PRIMARY KEY AUTOINCREMENT,
             sender_id INTEGER NOT NULL,
             receiver_id INTEGER NOT NULL,
-            msg_text TEXT NOT NULL,
-            UNIQUE(sender_id, receiver_id));
+            msg_text TEXT NOT NULL);
 
 CREATE TABLE IF NOT EXISTS user_perms(
             user_id TEXT PRIMARY KEY,
