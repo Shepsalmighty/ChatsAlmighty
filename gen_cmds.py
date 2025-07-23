@@ -199,7 +199,7 @@ class GenCmds(commands.Component):
 #TODO create whale song request channel point redeem
 
     @commands.cooldown(rate=1, per=60, key=commands.BucketType.chatter)
-    @commands.reward_command(id="dc1514be-75a5-4d48-bde1-8da26bc193bd")
+    @commands.reward_command(id="dc1514be-75a5-4d48-bde1-8da26bc193bd", invoke_when=commands.RewardStatus.unfulfilled)
     async def whale_req(self, ctx: commands.Context, song: str) -> None:
         """jump to the front of the song_requests queue.
          songs are auto-rejected if they are too long, have lyrics or the channel is too new.
@@ -228,11 +228,13 @@ class GenCmds(commands.Component):
 
                 if no_vocals:
                     await self.bot.db.song_req(user=user, song=song, whale=whale_request)
-                    await ctx.reply("song added to queue")
+                    await ctx.redemption.fulfill(token_for=ctx.broadcaster)
+                    await ctx.send("song added to queue")
                     return
-                await ctx.reply("your song was rejected. reason: song has lyrics")
+                await ctx.send("your song was rejected. reason: song has lyrics")
             else:
-                await ctx.reply("your song was rejected. reason: too long (10min max) or video too new/unknown")
+                await ctx.send("your song was rejected. reason: too long (10min max) or video too new/unknown")
+            await ctx.redemption.refund(token_for=ctx.broadcaster)
             self.rejected_songs.add((ctx.author.name, song))
 
     @commands.command(aliases=["reject", "rejected"])
@@ -252,43 +254,55 @@ class GenCmds(commands.Component):
         await self.bot.db.remove(ctx.author.id)
 
 
+    # @has_perm()
+    # @commands.command(aliases=["leave_msg", "lm", "send_msg", "sendmsg", "hatemsg"])
+    # async def leavemsg(self, ctx:commands.Context, receiver: twitchio.User):
+    #     """leave a message for someone: !leavemsg @someone"""
+    #     msg = ctx.message.text
+    #     sender = ctx.author.id
+    #     target = receiver.id
+    #
+    #     await self.bot.db.leave_message(sender=sender, reciever=target, msg=msg)
+
     @has_perm()
     @commands.command(aliases=["leave_msg", "lm", "send_msg", "sendmsg", "hatemsg"])
-    async def leavemsg(self, ctx:commands.Context, receiver: twitchio.User):
+    async def leavemsg(self, ctx: commands.Context, target: str, *, msg: str):
         """leave a message for someone: !leavemsg @someone"""
-        msg = ctx.message.text
         sender = ctx.author.id
-        target = receiver.id
 
-        await self.bot.db.leave_message(sender=sender, reciever=target, msg=msg)
+        if target.startswith("@"):
+            name = await self.bot.fetch_user(login=target.removeprefix("@"))
+            if name is None:
+                await ctx.send(f"Unknown user: {target}")
+                return
+            target = name.id
 
-    @leavemsg.error
-    async def leavemsg_error(self, payload: commands.CommandErrorPayload) -> None:
+        else:
+            names_array = await self.bot.db.lookup_name(name=target)
+            if not names_array:
+                await ctx.reply(f"Unknown user: {target}")
+                return
+            if len(names_array) > 1:
+                await ctx.reply(f"Msg not sent: multiple users found with {target} name.")
+                return
+            target = names_array[0][0]
 
-        name = payload.context.message.text.split()[1].removeprefix("@")
-        sender = payload.context.author.id
-        message = payload.context.message.text
-
-        target = await self.bot.db.lookup_name(name=name)
-        if not target:
-            await payload.context.reply(f"Unknown user: {name}")
-            return
-        if len(target) > 1:
-            await payload.context.reply(f"Msg not sent: multiple users found with {name} name.")
-            return
-        target = target[0][0]
-
-        await self.bot.db.leave_message(sender=sender, reciever=target, msg=message)
+        await self.bot.db.leave_message(sender=sender, receiver=target, msg=msg)
 
 
     @commands.command(aliases=["get_msg", "gm", "showfeet", "fwends"])
     async def getmsg(self, ctx:commands.Context, sender: twitchio.User):
         """get a message someone left you: !getmsg @username"""
-        # sender_id = sender
         receiver = ctx.author
         messages = await self.bot.db.get_message(sender=sender, receiver=receiver)
         for msg in messages:
             await ctx.reply(msg)
+
+    @getmsg.error
+    async def getmsg_error(self, payload: commands.CommandErrorPayload):
+        if isinstance(payload.exception, commands.BadArgument):
+            return False
+
 
     @commands.command(aliases=["mopLurk"])
     async def lurk(self, ctx: commands.Context):

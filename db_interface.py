@@ -35,20 +35,20 @@ class DataBaseInterface:
             return text
 
 
-    async def leave_message(self, sender, reciever, msg):
+    async def leave_message(self, sender, receiver, msg):
         async with self.pool.acquire() as con:
             async with con.transaction():
                 msg_sent = await con.fetchone('SELECT COUNT (*) FROM messages WHERE sender_id = ?', (sender,))
                 msg_count = await con.fetchone('SELECT COUNT (*) FROM messages WHERE sender_id = ? AND receiver_id = ?',
-                                               (sender, reciever))
-                inbox_full = await con.fetchone('SELECT COUNT (*) FROM messages WHERE receiver_id = ?', (reciever,))
+                                               (sender, receiver))
+                inbox_full = await con.fetchone('SELECT COUNT (*) FROM messages WHERE receiver_id = ?', (receiver,))
                 if msg_sent[0] >= self.TOTAL_MSGS or msg_count[0] >= self.DIRECT_MSGS or inbox_full[0] >= self.INBOX:
                     return
 
                 else:
                     await con.execute(
                         'INSERT INTO messages (`sender_id`, `receiver_id`, `msg_text`) VALUES (?,?,?)',
-                        (sender, reciever, " ".join(msg.split()[2:])))
+                        (sender, receiver, msg))
 
     async def lookup_name(self, name):
         """get user_ids with partial username, sudo_autofill"""
