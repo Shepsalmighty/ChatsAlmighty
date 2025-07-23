@@ -44,6 +44,7 @@ class Bot(commands.Bot):
         # await self.add_component(MyComponent(self))
         await self.load_module("gen_cmds")
         await self.load_module("mod_cmds")
+        await self.load_module("music_cmds")
 
         sub = eventsub.ChatMessageSubscription(broadcaster_user_id=getenv("BOT_ID"), user_id=getenv("BOT_ID"))
         reward = eventsub.ChannelPointsRedeemAddSubscription(broadcaster_user_id=getenv("BOT_ID"))
@@ -118,8 +119,6 @@ class Bot(commands.Bot):
         # For all unhandled errors, we should log them so we know what went wrong...
         msg = f'Ignoring exception in command "{ctx.command}":\n'
         LOGGER.error(msg, exc_info=error)
-
-
 
 
 

@@ -8,8 +8,6 @@ from song_req import YoutubeAudio
 import mpv
 from functools import partial
 
-#TODO: figure out a function to work "code cuck" in to the project
-
 
 def has_perm():
     async def predicate(ctx: commands.Context) -> bool:
@@ -47,13 +45,13 @@ class GenCmds(commands.Component):
         self.leviosah_count = 0
         self.seen_users = set()
         self.those_who_lurk = set()
-        self.rejected_songs = set()
-        self.player = mpv.MPV()
-        self.yt = YoutubeAudio
-        self.loop = asyncio.get_running_loop()
-        self.player.observe_property("track-list", self.schedule_callback)
-        self.has_called = False
-        self.stop_flag = False
+        # self.rejected_songs = set()
+        # self.player = mpv.MPV()
+        # self.yt = YoutubeAudio
+        # self.loop = asyncio.get_running_loop()
+        # self.player.observe_property("track-list", self.schedule_callback)
+        # self.has_called = False
+        # self.stop_flag = False
 
     # #TODO:
     # # if the bot detects that the song contains vocals, the bot responds to the request,
@@ -66,70 +64,68 @@ class GenCmds(commands.Component):
     # to Sea, I type @Sea and press tab... But that of course doesn't work, if Sea isn't here.
     # Can we come up with something smart, so I don't have to remember how the name his spelled?
     # -- add username table for easy look up "WHERE username LIKE '@Sea%';"
-    def _play(self, audio_file) -> None:
-        self.player.play(filename=audio_file)
+    # def _play(self, audio_file) -> None:
+    #     self.player.play(filename=audio_file)
+    #
+    # def _skip(self):
+    #     self.player.stop()
+    #
+    # def schedule_callback(self, *t):
+    #     asyncio.run_coroutine_threadsafe(self._callback(*t), loop=self.loop)
+    #
+    #
+    # async def _callback(self, event, tracks):
+    #     if not self.has_called:
+    #         self.has_called = True
+    #         return
+    #
+    #     if not self.stop_flag:
+    #         print(f"in callback{tracks}")
+    #         if tracks:
+    #             return
+    #         await self.play(self.ctx)
+    #     return
+    #
+    #
+    # @commands.is_owner()
+    # @commands.command()
+    # async def skip(self, ctx:commands.Context):
+    #     self.player.stop()
+    #
+    # @commands.is_owner()
+    # @commands.command()
+    # async def stop(self, ctx:commands.Context):
+    #     self.stop_flag = True
+    #     self.player.stop()
+    #
+    #
+    # @commands.command()
+    # async def play(self, ctx:commands.Context):
+    #     """ clear the played song from DB
+    #         check if there are more songs in queue
+    #         requests the new song to play"""
+    #     self.stop_flag = False
+    #     self.ctx = ctx
+    #
+    #     #request 0-2 == row_id, user_id, song_request
+    #     request = await self.bot.db.get_song()
+    #
+    #     if request is None:
+    #         await ctx.send("no songs in queue")
+    #         return
+    #
+    #     #get username by creating user object from user_id pulled from db and calling name attr
+    #     user_name_from_id = (await ctx.bot.fetch_user(id=request[1])).display_name
+    #     #create YoutubeAudio object
+    #     vid_obj = self.yt.get(request[2])
+    #
+    #     await ctx.send(f"now playing {vid_obj.info.title} requested by {user_name_from_id}")
+    #     file_path = await asyncio.to_thread(lambda: str(vid_obj.audio_file))
+    #     await asyncio.to_thread(self._play, file_path)
+    #     # remove song from db/queue
+    #     await self.bot.db.delete_one(request[0])
 
-    def _skip(self):
-        self.player.stop()
 
-    def schedule_callback(self, *t):
-        asyncio.run_coroutine_threadsafe(self._callback(*t), loop=self.loop)
-
-
-    async def _callback(self, event, tracks):
-        if not self.has_called:
-            self.has_called = True
-            return
-
-        if not self.stop_flag:
-            print(f"in callback{tracks}")
-            if tracks:
-                return
-            await self.play(self.ctx)
-        return
-
-
-    @commands.is_owner()
-    @commands.command()
-    async def skip(self, ctx:commands.Context):
-        self.player.stop()
-
-    @commands.is_owner()
-    @commands.command()
-    async def stop(self, ctx:commands.Context):
-        self.stop_flag = True
-        self.player.stop()
-
-
-    @commands.command()
-    async def play(self, ctx:commands.Context):
-        """ clear the played song from DB
-            check if there are more songs in queue
-            requests the new song to play"""
-        self.stop_flag = False
-        self.ctx = ctx
-
-        #request 0-2 == row_id, user_id, song_request
-        request = await self.bot.db.get_song()
-
-        if request is None:
-            await ctx.send("no songs in queue")
-            return
-
-        #get username by creating user object from user_id pulled from db and calling name attr
-        user_name_from_id = (await ctx.bot.fetch_user(id=request[1])).display_name
-        #create YoutubeAudio object
-        vid_obj = self.yt.get(request[2])
-
-        await ctx.send(f"now playing {vid_obj.info.title} requested by {user_name_from_id}")
-        file_path = await asyncio.to_thread(lambda: str(vid_obj.audio_file))
-        await asyncio.to_thread(self._play, file_path)
-        # remove song from db/queue
-        await self.bot.db.delete_one(request[0])
-
-
-#TODO skip song option times out the user who requested the skipped song for the len
-# of the song they req - GROUP COMMAND commands.group() would be skip and skip.command() would include the timeout
 
     @commands.command(aliases=["q", "songs", "song_list", "song_queue"])
     async def queue(self, ctx: commands.Context):
@@ -154,7 +150,7 @@ class GenCmds(commands.Component):
     @commands.command(aliases=["song_req", "song_request", "s_r"])
     async def sr(self, ctx:commands.Context, song: str) -> None:
         """request a song from a youtube link from browser: !sr https://www.youtube.com/watch?v=.....
-         songs are auto-rejected if they are too long, have lyrics or the channel is too new.
+         songs are auto-rejected if they are over 10mins, have lyrics or the channel is too new.
          pester the streamer if you want your song heard"""
         user = ctx.author.id
         song_object = YoutubeAudio.get(song)
@@ -196,7 +192,6 @@ class GenCmds(commands.Component):
     #
     #     print(reward.id)
 
-#TODO create whale song request channel point redeem
 
     @commands.cooldown(rate=1, per=60, key=commands.BucketType.chatter)
     @commands.reward_command(id="dc1514be-75a5-4d48-bde1-8da26bc193bd", invoke_when=commands.RewardStatus.unfulfilled)
@@ -253,16 +248,6 @@ class GenCmds(commands.Component):
         """remove the last song you requested"""
         await self.bot.db.remove(ctx.author.id)
 
-
-    # @has_perm()
-    # @commands.command(aliases=["leave_msg", "lm", "send_msg", "sendmsg", "hatemsg"])
-    # async def leavemsg(self, ctx:commands.Context, receiver: twitchio.User):
-    #     """leave a message for someone: !leavemsg @someone"""
-    #     msg = ctx.message.text
-    #     sender = ctx.author.id
-    #     target = receiver.id
-    #
-    #     await self.bot.db.leave_message(sender=sender, reciever=target, msg=msg)
 
     @has_perm()
     @commands.command(aliases=["leave_msg", "lm", "send_msg", "sendmsg", "hatemsg"])
