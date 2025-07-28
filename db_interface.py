@@ -129,14 +129,6 @@ class DataBaseInterface:
                                       'ORDER BY is_whale DESC, row_id ASC LIMIT 1')
             return link
 
-### ORDER BY is_whale DESC , rowid ASC LIMIT 1;
-
-    # async def get_whale_song(self):
-    #     async with self.pool.acquire() as con:
-    #         link = await con.fetchone('SELECT row_id, user_id, song_request FROM whale_request '
-    #                                   'ORDER BY row_id ASC LIMIT 1')
-    #         return link
-
     async def delete_one(self, row_id):
         async with self.pool.acquire() as con:
             await con.execute('DELETE FROM song_request WHERE row_id = ?', row_id)

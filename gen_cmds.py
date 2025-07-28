@@ -182,7 +182,7 @@ class GenCmds(commands.Component):
                 await ctx.reply("your song was rejected. reason: too long (10min max) or video too new/unknown")
             self.rejected_songs.add((ctx.author.name, song))
 
-#info test command to generate a custom point reward id maybe useful later
+#INFO - Below command generates a custom point reward id -- maybe useful later
     # @commands.is_owner()
     # @commands.command()
     # async def test_cmd(self, ctx:commands.Context):

@@ -7,9 +7,6 @@ from twitchio.ext import commands
 from song_req import YoutubeAudio
 import mpv
 
-#TODO skip song option times out the user who requested the skipped song for the len
-# of the song they req - GROUP COMMAND commands.group() would be skip and skip.command() would include the timeout
-
 
 class MusicCmds(commands.Component):
     def __init__(self, bot: commands.Bot):

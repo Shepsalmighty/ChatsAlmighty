@@ -5,8 +5,6 @@ from twitchio.ext.commands import is_owner
 
 class ModCmds(commands.Component):
     def __init__(self, bot: commands.Bot):
-        # Passing args is not required...
-        # We pass bot here as an example...
         self.bot = bot
 
     @commands.is_owner()

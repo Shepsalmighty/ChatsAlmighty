@@ -200,24 +200,3 @@ def play_audio_stream(audio_file: Path):
     input("Press Enter to stop playback...\n")
     player.stop()
 
-
-# def main():
-#     youtube_link: str = input("Enter YouTube URL: ")
-#     print("downloading and analyzing audio from YouTube...")
-#     audio: YoutubeAudio = YoutubeAudio(youtube_link)
-#     if (not audio.contains_vocals(0.2)) or input("this video contains vocals. press P to play anyway: ").lower() == "p":
-#         if audio.info is None:
-#             print("Invalid link")
-#             return
-#
-#         print(audio.info.model_dump_json(indent=4))
-#
-#         if audio.audio_file is None:
-#             print("Unable to download audio from YouTube")
-#             return
-#
-#         play_audio_stream(audio.audio_file)
-#
-#
-# if __name__ == "__main__":
-#     main()
