@@ -54,8 +54,6 @@ class MusicCmds(commands.Component):
     async def getrekt(self, ctx: commands.Context):
         if self.current_song is not None and self.person_to_rek is not None:
             timeout_len = self.current_song.info.duration
-            #TODO FOR NEXT STREAM below doesn't work, get the chatter id from self.person_to_rek and rek them
-            # maybe rename func to !getrekt
 
             await ctx.chatter.timeout_user(user=self.person_to_rek.id,
                                            duration=timeout_len,

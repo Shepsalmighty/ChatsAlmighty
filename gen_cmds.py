@@ -32,7 +32,7 @@ def has_perm():
 class GenCmds(commands.Component):
     MAX_VID_LEN = 600 #seconds
     MIN_SUBSCRIBERS = 100
-    ESTIMATOR_THRESHOLD = 0.2
+    ESTIMATOR_THRESHOLD = 0.3
     MIN_VID_AGE = 7
     MIN_USERNAME_LEN = 3
     def __init__(self, bot: commands.Bot):
@@ -120,14 +120,14 @@ class GenCmds(commands.Component):
             self.rejected_songs.add((ctx.author.name, song))
 
 #INFO - Below command generates a custom point reward id -- maybe useful later
-    # @commands.is_owner()
-    # @commands.command()
-    # async def test_cmd(self, ctx:commands.Context):
-    #     reward = await ctx.broadcaster.create_custom_reward(title="whale_song", cost=10_000,
-    #                                                         prompt="request a song from a youtube link",
-    #                                                         redemptions_skip_queue=True)
-    #
-    #     print(reward.id)
+    @commands.is_owner()
+    @commands.command()
+    async def test_cmd(self, ctx:commands.Context):
+        reward = await ctx.broadcaster.create_custom_reward(title="song_perms", cost=5_000,
+                                                            prompt="pay your song request taxes",
+                                                            redemptions_skip_queue=True)
+
+        print(reward.id)
 
 
     @commands.cooldown(rate=1, per=60, key=commands.BucketType.chatter)
