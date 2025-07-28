@@ -45,13 +45,8 @@ class GenCmds(commands.Component):
         self.leviosah_count = 0
         self.seen_users = set()
         self.those_who_lurk = set()
-        # self.rejected_songs = set()
-        # self.player = mpv.MPV()
-        # self.yt = YoutubeAudio
-        # self.loop = asyncio.get_running_loop()
-        # self.player.observe_property("track-list", self.schedule_callback)
-        # self.has_called = False
-        # self.stop_flag = False
+        self.rejected_songs = set()
+
 
     # #TODO:
     # # if the bot detects that the song contains vocals, the bot responds to the request,
@@ -66,68 +61,10 @@ class GenCmds(commands.Component):
     # -- add username table for easy look up "WHERE username LIKE '@Sea%';"
     # def _play(self, audio_file) -> None:
     #     self.player.play(filename=audio_file)
-    #
-    # def _skip(self):
-    #     self.player.stop()
-    #
-    # def schedule_callback(self, *t):
-    #     asyncio.run_coroutine_threadsafe(self._callback(*t), loop=self.loop)
-    #
-    #
-    # async def _callback(self, event, tracks):
-    #     if not self.has_called:
-    #         self.has_called = True
-    #         return
-    #
-    #     if not self.stop_flag:
-    #         print(f"in callback{tracks}")
-    #         if tracks:
-    #             return
-    #         await self.play(self.ctx)
-    #     return
-    #
-    #
-    # @commands.is_owner()
-    # @commands.command()
-    # async def skip(self, ctx:commands.Context):
-    #     self.player.stop()
-    #
-    # @commands.is_owner()
-    # @commands.command()
-    # async def stop(self, ctx:commands.Context):
-    #     self.stop_flag = True
-    #     self.player.stop()
-    #
-    #
-    # @commands.command()
-    # async def play(self, ctx:commands.Context):
-    #     """ clear the played song from DB
-    #         check if there are more songs in queue
-    #         requests the new song to play"""
-    #     self.stop_flag = False
-    #     self.ctx = ctx
-    #
-    #     #request 0-2 == row_id, user_id, song_request
-    #     request = await self.bot.db.get_song()
-    #
-    #     if request is None:
-    #         await ctx.send("no songs in queue")
-    #         return
-    #
-    #     #get username by creating user object from user_id pulled from db and calling name attr
-    #     user_name_from_id = (await ctx.bot.fetch_user(id=request[1])).display_name
-    #     #create YoutubeAudio object
-    #     vid_obj = self.yt.get(request[2])
-    #
-    #     await ctx.send(f"now playing {vid_obj.info.title} requested by {user_name_from_id}")
-    #     file_path = await asyncio.to_thread(lambda: str(vid_obj.audio_file))
-    #     await asyncio.to_thread(self._play, file_path)
-    #     # remove song from db/queue
-    #     await self.bot.db.delete_one(request[0])
 
 
 
-    @commands.command(aliases=["q", "songs", "song_list", "song_queue"])
+    @commands.command(aliases=["q"])
     async def queue(self, ctx: commands.Context):
         count = await self.bot.db.queue_len()
         await ctx.send(f"{count} songs in queue")
@@ -147,7 +84,7 @@ class GenCmds(commands.Component):
 
     @has_perm()
     @commands.cooldown(rate=1, per=60, key=commands.BucketType.chatter)
-    @commands.command(aliases=["song_req", "song_request", "s_r"])
+    @commands.command(aliases=["song_req", "song_request"])
     async def sr(self, ctx:commands.Context, song: str) -> None:
         """request a song from a youtube link from browser: !sr https://www.youtube.com/watch?v=.....
          songs are auto-rejected if they are over 10mins, have lyrics or the channel is too new.
@@ -232,7 +169,7 @@ class GenCmds(commands.Component):
             await ctx.redemption.refund(token_for=ctx.broadcaster)
             self.rejected_songs.add((ctx.author.name, song))
 
-    @commands.command(aliases=["reject", "rejected"])
+    @commands.command(aliases=["rejected"])
     async def show_rejected(self, ctx: commands.Context):
         for song in self.rejected_songs:
             notify_parts: list[str] = []
@@ -250,7 +187,7 @@ class GenCmds(commands.Component):
 
 
     @has_perm()
-    @commands.command(aliases=["leave_msg", "lm", "send_msg", "sendmsg", "hatemsg"])
+    @commands.command(aliases=["send_msg", "sendmsg"])
     async def leavemsg(self, ctx: commands.Context, target: str, *, msg: str):
         """leave a message for someone: !leavemsg @someone"""
         sender = ctx.author.id
@@ -275,7 +212,7 @@ class GenCmds(commands.Component):
         await self.bot.db.leave_message(sender=sender, receiver=target, msg=msg)
 
 
-    @commands.command(aliases=["get_msg", "gm", "showfeet", "fwends"])
+    @commands.command(aliases=["get_msg", "gm", "showfeet"])
     async def getmsg(self, ctx:commands.Context, sender: twitchio.User):
         """get a message someone left you: !getmsg @username"""
         receiver = ctx.author
@@ -321,7 +258,7 @@ class GenCmds(commands.Component):
 
         await ctx.broadcaster.send_message(message=notify, sender=self.bot.user, token_for=self.bot.user)
 
-    @commands.command(aliases=["clear", "clear_messages", "clear_msgs", "empty"])
+    @commands.command(aliases=["clear", "clear_messages", "clear_msgs"])
     async def clear_inbox(self, ctx: commands.Context):
         """deletes all stored messages for this user"""
         count = await self.bot.db.clear_inbox(ctx.author.id)

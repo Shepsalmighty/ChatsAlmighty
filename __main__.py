@@ -18,9 +18,7 @@ LOGGER: logging.Logger = logging.getLogger("Bot")
 load_dotenv()
 
 
-#TODO blacklist count to 4 song
-
-# #TODO switch over from self botting to bot account
+# TODO switch over from self botting to bot account
 
 class Bot(commands.Bot):
     def __init__(self, *, token_database: asqlite.Pool, pool: asqlite.Pool) -> None:

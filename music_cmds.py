@@ -19,7 +19,7 @@ class MusicCmds(commands.Component):
         self.has_called = False
         self.stop_flag = False
         self.current_song : YoutubeAudio | None = None
-        self.person_to_rek = ""
+        self.person_to_rek = None
 
     def _play(self, audio_file) -> None:
         self.player.play(filename=audio_file)
@@ -42,23 +42,26 @@ class MusicCmds(commands.Component):
             await self.play(self.ctx)
         return
 
+
+    # @commands.group(name="skip", invoke_fallback=True)
     @commands.is_owner()
-    @commands.group(name="skip", invoke_fallback=True)
+    @commands.command()
     async def skip(self, ctx: commands.Context):
         self.player.stop()
 
     @commands.is_owner()
-    @skip.command(name="skipto")
-    async def skip_timeout(self, ctx: commands.Context):
+    @commands.command(aliases=["rekt"])
+    async def getrekt(self, ctx: commands.Context):
         if self.current_song is not None and self.person_to_rek is not None:
             timeout_len = self.current_song.info.duration
             #TODO FOR NEXT STREAM below doesn't work, get the chatter id from self.person_to_rek and rek them
             # maybe rename func to !getrekt
 
-            # this would try to time me out, not the user in question
-            await ctx.chatter.timeout(timeout_len)
-            await ctx.send
+            await ctx.chatter.timeout_user(user=self.person_to_rek.id,
+                                           duration=timeout_len,
+                                           moderator=self.bot.user)
 
+            await ctx.send(f"{self.person_to_rek.name} timed out for {timeout_len}, trolls get rolled")
 
         self.player.stop()
 
@@ -84,13 +87,13 @@ class MusicCmds(commands.Component):
             await ctx.send("no songs in queue")
             return
 
-
         # get username by creating user object from user_id pulled from db and calling name attr
-        user_name_from_id = (await ctx.bot.fetch_user(id=request[1])).display_name
+        self.person_to_rek = await ctx.bot.fetch_user(id=request[1])
+        user_name_from_id = self.person_to_rek.display_name
         # create YoutubeAudio object
         vid_obj = self.yt.get(request[2])
         self.current_song = vid_obj
-        self.person_to_rek = await ctx.bot.fetch_user(id=request[1])
+
 
         await ctx.send(f"now playing {vid_obj.info.title} requested by {user_name_from_id}")
         file_path = await asyncio.to_thread(lambda: str(vid_obj.audio_file))
