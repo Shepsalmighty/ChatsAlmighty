@@ -18,7 +18,7 @@ class ModCmds(commands.Component):
         await ctx.send("Sheps will be right back, he's probably poopin")
 
     @commands.is_elevated()
-    @commands.command(aliases=["allow", "fine", "ok"])
+    @commands.command(aliases=["allow"])
     async def permit(self, ctx:commands.Context, *users: twitchio.User) -> None:
         query = """INSERT INTO user_perms(user_id, user_name, has_perms)
                 VALUES(?,?,?)
@@ -34,7 +34,7 @@ class ModCmds(commands.Component):
 
 
     @commands.is_elevated()
-    @commands.command(aliases=["fuck_you", "fuck_off", "get_rekt", "rekt", "fu"])
+    @commands.command()
     async def deny(self, ctx: commands.Context, *users: twitchio.User) -> None:
         sql_upsert = """
         INSERT INTO user_perms (user_id, user_name, has_perms)
