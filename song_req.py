@@ -98,7 +98,8 @@ class YoutubeAudio:
             'quiet': True,
             'no_warnings': True,
             'noprogress': True,
-            'format': 'bestaudio/best'
+            'format': 'bestaudio/best',
+            "no_playlist" : True
         }
 
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
