@@ -31,7 +31,7 @@ class Metadata(BaseModel):
     categories: list[str]
     tags: list[str]
     comment_count: conint(ge=0) | None
-    like_count: conint(ge=0)
+    like_count: conint(ge=0) | None
     channel: constr(min_length=1)
     channel_follower_count: conint(ge=0)
     upload_date: Annotated[datetime, BeforeValidator(lambda d: datetime.strptime(d, "%Y%m%d"))]
