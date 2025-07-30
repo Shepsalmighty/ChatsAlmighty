@@ -35,6 +35,8 @@ class GenCmds(commands.Component):
     ESTIMATOR_THRESHOLD = 0.3
     MIN_VID_AGE = 7
     MIN_USERNAME_LEN = 3
+    COOLDOWN_UPPER = 5 * 60 * 60 #5hour cooldown
+    COOLDOWN_LOWER = 60 #60second cooldown
     def __init__(self, bot: commands.Bot):
         # Passing args is not required...
         # We pass bot here as an example...
@@ -54,14 +56,6 @@ class GenCmds(commands.Component):
     # # you use another neuronal network to remove the vocals and play clean-version
 
     #TODO - command: !LMGTFY or !LMKTFY - searches the arg and returns the summary/explanation
-
-    #TODO Sheps, I think I have a suggestion for the bot. Normally when I want to write something
-    # to Sea, I type @Sea and press tab... But that of course doesn't work, if Sea isn't here.
-    # Can we come up with something smart, so I don't have to remember how the name his spelled?
-    # -- add username table for easy look up "WHERE username LIKE '@Sea%';"
-    # def _play(self, audio_file) -> None:
-    #     self.player.play(filename=audio_file)
-
 
 
     @commands.command(aliases=["q"])
@@ -104,6 +98,7 @@ class GenCmds(commands.Component):
                                  (datetime.now() - timedelta(days=GenCmds.MIN_VID_AGE)))
             enough_subs = song_object.info.channel_follower_count > GenCmds.MIN_SUBSCRIBERS
 
+
             if song_len_ok and (older_than_a_week or enough_subs):
                 # INFO below is where the audio is downloaded
                 no_vocals = not await asyncio.to_thread(
@@ -119,18 +114,36 @@ class GenCmds(commands.Component):
                 await ctx.reply("your song was rejected. reason: too long (10min max) or video too new/unknown")
             self.rejected_songs.add((ctx.author.name, song))
 
+#TODO create song_perms channel point redeem (grant perms in db using channel points)
+
 #INFO - Below command generates a custom point reward id -- maybe useful later
     @commands.is_owner()
     @commands.command()
-    async def test_cmd(self, ctx:commands.Context):
+    async def create_point_redeem_id(self, ctx:commands.Context):
         reward = await ctx.broadcaster.create_custom_reward(title="song_perms", cost=5_000,
                                                             prompt="pay your song request taxes",
                                                             redemptions_skip_queue=True)
 
         print(reward.id)
 
+#TODO cry until chilly or mysty come and help
+    @commands.cooldown(rate=1, per=COOLDOWN_UPPER, key=commands.BucketType.chatter)
+    @commands.reward_command(id="b8abfe46-7c5d-4e4a-89f2-be4c78a94fd4", invoke_when=commands.RewardStatus.unfulfilled)
+    async def whale_song_perms(self, ctx: commands.Context, song: str) -> None:
+        query = """INSERT INTO user_perms(user_id, user_name, has_perms)
+                        VALUES(?,?,?)
+                        ON CONFLICT(user_id) DO UPDATE
+                        SET has_perms = 1;"""
 
-    @commands.cooldown(rate=1, per=60, key=commands.BucketType.chatter)
+        user = ctx.chatter
+
+        async with self.bot.pool.acquire() as con:
+            await con.executemany(query, (user.id, user.name, 1)) # 1 used for True in our sqlite table
+            await ctx.redemption.fulfill(token_for=ctx.broadcaster)
+            await ctx.send(f"permissions granted to: {user.name}")
+
+
+    @commands.cooldown(rate=1, per=COOLDOWN_LOWER, key=commands.BucketType.chatter)
     @commands.reward_command(id="dc1514be-75a5-4d48-bde1-8da26bc193bd", invoke_when=commands.RewardStatus.unfulfilled)
     async def whale_req(self, ctx: commands.Context, song: str) -> None:
         """jump to the front of the song_requests queue.
@@ -335,6 +348,7 @@ class GenCmds(commands.Component):
         self.leviosah_count += 1
         if payload.chatter.id != self.bot.owner_id and self.derp_count % self.derp_trigger == 0:
             derp_string = ""
+            custom_emote = " shepsa1DErP" #add your chosen emote to the derp message by default goes at the end line 352
             letters = 0
             for index in range(len(payload.text)):
                 if payload.text[index].isalpha():
@@ -345,6 +359,7 @@ class GenCmds(commands.Component):
                     letters += 1
                 else:
                     derp_string += payload.text[index]
+            derp_string += custom_emote #add your chosen emote to the end of the derp message
             await payload.broadcaster.send_message(message=derp_string, sender=self.bot.user, token_for=self.bot.user)
 
         if payload.chatter.id != self.bot.owner_id and self.leviosah_count % self.leviosah_trigger == 0:
