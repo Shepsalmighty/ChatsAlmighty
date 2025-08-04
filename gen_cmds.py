@@ -1,6 +1,7 @@
 import asyncio
 from datetime import datetime, timedelta
 from unicodedata import category
+from warnings import deprecated
 
 import twitchio
 from twitchio.ext import commands
@@ -37,6 +38,7 @@ class GenCmds(commands.Component):
     MIN_USERNAME_LEN = 3
     COOLDOWN_UPPER = 5 * 60 * 60 #5hour cooldown
     COOLDOWN_LOWER = 60 #60second cooldown
+    SCREAM_INTO_THE_VOID = 20
     def __init__(self, bot: commands.Bot):
         # Passing args is not required...
         # We pass bot here as an example...
@@ -48,15 +50,9 @@ class GenCmds(commands.Component):
         self.seen_users = set()
         self.those_who_lurk = set()
         self.rejected_songs = set()
-
-
-    # #TODO:
-    # # if the bot detects that the song contains vocals, the bot responds to the request,
-    # # asking if the vocals should be disabled. if the requester confirms,
-    # # you use another neuronal network to remove the vocals and play clean-version
+        # self.player = mpv.MPV(ytdl=True)
 
     #TODO - command: !LMGTFY or !LMKTFY - searches the arg and returns the summary/explanation
-
 
     @commands.command(aliases=["q"])
     async def queue(self, ctx: commands.Context):
@@ -75,9 +71,21 @@ class GenCmds(commands.Component):
     async def code_cuck(self, ctx:commands.Context):
         await ctx.send(f"@{ctx.channel.name} SIT")
 
+    @has_perm()
+    @commands.cooldown(rate=1, per=SCREAM_INTO_THE_VOID, key=commands.BucketType.chatter)
+    @commands.command()
+    async def listen(self, ctx:commands.Context):
+        player = mpv.MPV(ytdl=True, video=False)
+        if self.derp_count % 2:
+            link = "https://www.youtube.com/watch?v=raClhK0dbts"
+        else:
+            link = "https://youtu.be/SIaFtAKnqBU?si=u-CK56KR2Tdw7PKG&t=2"
+        player.play(link)
+        player.wait_for_playback()
+
 
     @has_perm()
-    @commands.cooldown(rate=1, per=60, key=commands.BucketType.chatter)
+    @commands.cooldown(rate=1, per=COOLDOWN_LOWER, key=commands.BucketType.chatter)
     @commands.command(aliases=["song_req", "song_request"])
     async def sr(self, ctx:commands.Context, song: str) -> None:
         """request a song from a youtube link from browser: !sr https://www.youtube.com/watch?v=.....
@@ -114,17 +122,17 @@ class GenCmds(commands.Component):
                 await ctx.reply("your song was rejected. reason: too long (10min max) or video too new/unknown")
             self.rejected_songs.add((ctx.author.name, song))
 
-#TODO create song_perms channel point redeem (grant perms in db using channel points)
+
 
 #INFO - Below command generates a custom point reward id -- maybe useful later
-    @commands.is_owner()
-    @commands.command()
-    async def create_point_redeem_id(self, ctx:commands.Context):
-        reward = await ctx.broadcaster.create_custom_reward(title="song_perms", cost=5_000,
-                                                            prompt="pay your song request taxes",
-                                                            redemptions_skip_queue=True)
-
-        print(reward.id)
+    # @commands.is_owner()
+    # @commands.command()
+    # async def create_point_redeem_id(self, ctx:commands.Context):
+    #     reward = await ctx.broadcaster.create_custom_reward(title="song_perms", cost=5_000,
+    #                                                         prompt="pay your song request taxes",
+    #                                                         redemptions_skip_queue=True)
+    #
+    #     print(reward.id)
 
 #TODO cry until chilly or mysty come and help
     @commands.cooldown(rate=1, per=COOLDOWN_UPPER, key=commands.BucketType.chatter)
