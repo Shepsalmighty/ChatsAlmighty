@@ -71,6 +71,10 @@ class GenCmds(commands.Component):
     async def code_cuck(self, ctx:commands.Context):
         await ctx.send(f"@{ctx.channel.name} SIT")
 
+    @commands.command(aliases=["term", "ugly_term", "coolterm", "uglyterm"])
+    async def cool_term(self, ctx:commands.Context):
+        await ctx.send("get the AWESOME term here https://github.com/Swordfish90/cool-retro-term")
+
     @has_perm()
     @commands.cooldown(rate=1, per=SCREAM_INTO_THE_VOID, key=commands.BucketType.chatter)
     @commands.command()
@@ -83,7 +87,8 @@ class GenCmds(commands.Component):
         player.play(link)
         player.wait_for_playback()
 
-
+#TODO - download the audio for the !listen commands for faster command speed (probably using
+# !sr and taking that self.yt.filepath obj)???
     @has_perm()
     @commands.cooldown(rate=1, per=COOLDOWN_LOWER, key=commands.BucketType.chatter)
     @commands.command(aliases=["song_req", "song_request"])
@@ -134,10 +139,18 @@ class GenCmds(commands.Component):
     #
     #     print(reward.id)
 
-#TODO cry until chilly or mysty come and help
+
     @commands.cooldown(rate=1, per=COOLDOWN_UPPER, key=commands.BucketType.chatter)
     @commands.reward_command(id="b8abfe46-7c5d-4e4a-89f2-be4c78a94fd4", invoke_when=commands.RewardStatus.unfulfilled)
     async def whale_song_perms(self, ctx: commands.Context, song: str) -> None:
+        user_has_perms = ("""SELECT user_id FROM user_perms WHERE user_id = ? AND has_perms = 1""",
+                     (ctx.chatter.id,))
+
+        if user_has_perms[0]:
+            await ctx.redemption.refund(token_for=ctx.broadcaster)
+            return
+
+
         query = """INSERT INTO user_perms(user_id, user_name, has_perms)
                         VALUES(?,?,?)
                         ON CONFLICT(user_id) DO UPDATE
@@ -157,7 +170,7 @@ class GenCmds(commands.Component):
         """jump to the front of the song_requests queue.
          songs are auto-rejected if they are too long, have lyrics or the channel is too new.
          pester the streamer if you want your song heard"""
-        print(ctx)
+        # print(ctx)
         user = ctx.author.id
         song_object = YoutubeAudio.get(song)
 
