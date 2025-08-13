@@ -2,6 +2,6 @@ asqlite==2.0.0
 dotenv==0.9.9
 ffmpeg-python==0.2.0
 silero-vad==5.1.2
-twitchio==3.0.1
+twitchio~=3.0
 yt-dlp==2025.6.9
 python-mpv==1.0.8

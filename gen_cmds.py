@@ -321,20 +321,21 @@ class GenCmds(commands.Component):
     @commands.command(aliases=["commands"])
     async def cmds(self, ctx:commands.Context):
         """lists all current commands for this channel"""
-        cmds = []
+        cmds: list[str] = []
 
-        for cmd in ctx.bot.unique_commands:
+        for cmd in self.bot.unique_commands:
+            if isinstance(cmd, commands.RewardCommand):
+                continue
+
             try:
-                # I'll make this public before full release
                 await cmd._run_guards(ctx, with_cooldowns=False)
             except commands.GuardFailure:
                 continue
 
-            cmds.append(f"{ctx.prefix}{cmd}")
+            cmds.append(f"{ctx.prefix}{cmd.name}")
 
         joined = " ".join(cmds)
         await ctx.send(f"Commands: {joined}")
-
 
 
     @commands.Component.listener("event_message")
