@@ -50,7 +50,8 @@ class GenCmds(commands.Component):
         self.seen_users = set()
         self.those_who_lurk = set()
         self.rejected_songs = set()
-        # self.player = mpv.MPV(ytdl=True)
+        self.alerts_player = mpv.MPV(ytdl=True, video=False)
+        # self.alerts_player = mpv.MPV(ytdl=True)
 
     #TODO - command: !LMGTFY or !LMKTFY - searches the arg and returns the summary/explanation
 
@@ -79,13 +80,10 @@ class GenCmds(commands.Component):
     @commands.cooldown(rate=1, per=SCREAM_INTO_THE_VOID, key=commands.BucketType.chatter)
     @commands.command()
     async def listen(self, ctx:commands.Context):
-        player = mpv.MPV(ytdl=True, video=False)
-        if self.derp_count % 2:
-            link = "https://www.youtube.com/watch?v=raClhK0dbts"
-        else:
-            link = "https://youtu.be/SIaFtAKnqBU?si=u-CK56KR2Tdw7PKG&t=2"
-        player.play(link)
-        player.wait_for_playback()
+        listen = YoutubeAudio.get("https://www.youtube.com/watch?v=raClhK0dbts")
+        file_path = await asyncio.to_thread(lambda: str(listen.audio_file))
+        self.alerts_player.play(file_path)
+        self.alerts_player.wait_for_playback()
 
 #TODO - download the audio for the !listen commands for faster command speed (probably using
 # !sr and taking that self.yt.filepath obj)???
