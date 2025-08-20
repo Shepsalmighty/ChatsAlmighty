@@ -57,6 +57,7 @@ class GenCmds(commands.Component):
 
     @commands.command(aliases=["q"])
     async def queue(self, ctx: commands.Context):
+        """ - show length of the song queue"""
         count = await self.bot.db.queue_len()
         await ctx.send(f"{count} songs in queue")
 
@@ -64,22 +65,25 @@ class GenCmds(commands.Component):
     @has_perm()
     @commands.command(aliases=["hello", "howdy", "how_are_ya", "rainbow_dicks"])
     async def hi(self, ctx:commands.Context):
-        """if you need to be told what this does even i can't help you"""
+        """ - if you need to be told what this does even i can't help you"""
         # perms_list.append(ctx.chatter.name)
         await ctx.reply(f"Hello, World! Oh, and you {ctx.chatter.mention}")
 
     @commands.command(aliases=["sit"])
     async def code_cuck(self, ctx:commands.Context):
+        """ - make Sheps sit and watch shepsa1Wutty"""
         await ctx.send(f"@{ctx.channel.name} SIT")
 
     @commands.command(aliases=["term", "ugly_term", "coolterm", "uglyterm"])
     async def cool_term(self, ctx:commands.Context):
+        """ - link to the SEXY terminal Sheps uses"""
         await ctx.send("get the AWESOME term here https://github.com/Swordfish90/cool-retro-term")
 
     @has_perm()
     @commands.cooldown(rate=1, per=SCREAM_INTO_THE_VOID, key=commands.BucketType.chatter)
     @commands.command()
     async def listen(self, ctx:commands.Context):
+        """ - get the idiots attention"""
         listen = YoutubeAudio.get("https://www.youtube.com/watch?v=raClhK0dbts")
         file_path = await asyncio.to_thread(lambda: str(listen.audio_file))
         self.alerts_player.play(file_path)
@@ -91,7 +95,7 @@ class GenCmds(commands.Component):
     @commands.cooldown(rate=1, per=COOLDOWN_LOWER, key=commands.BucketType.chatter)
     @commands.command(aliases=["song_req", "song_request"])
     async def sr(self, ctx:commands.Context, song: str) -> None:
-        """request a song from a youtube link from browser: !sr https://www.youtube.com/watch?v=.....
+        """ - request a song from a youtube link from browser: !sr https://www.youtube.com/watch?v=.....
          songs are auto-rejected if they are over 10mins, have lyrics or the channel is too new.
          pester the streamer if you want your song heard"""
         user = ctx.author.id
@@ -165,7 +169,7 @@ class GenCmds(commands.Component):
     @commands.cooldown(rate=1, per=COOLDOWN_LOWER, key=commands.BucketType.chatter)
     @commands.reward_command(id="dc1514be-75a5-4d48-bde1-8da26bc193bd", invoke_when=commands.RewardStatus.unfulfilled)
     async def whale_req(self, ctx: commands.Context, song: str) -> None:
-        """jump to the front of the song_requests queue.
+        """ - jump to the front of the song_requests queue.
          songs are auto-rejected if they are too long, have lyrics or the channel is too new.
          pester the streamer if you want your song heard"""
         # print(ctx)
@@ -203,6 +207,7 @@ class GenCmds(commands.Component):
 
     @commands.command(aliases=["rejected"])
     async def show_rejected(self, ctx: commands.Context):
+        """ - display a list of rejected songs"""
         for song in self.rejected_songs:
             notify_parts: list[str] = []
             notify_parts.append(f"{song[0]} ({song[1]})")
@@ -214,14 +219,14 @@ class GenCmds(commands.Component):
 
     @commands.command(aliases=["undo", "cancel", "remove"])
     async def remove_last(self, ctx:commands.Context):
-        """remove the last song you requested"""
+        """ - remove the last song you requested"""
         await self.bot.db.remove(ctx.author.id)
 
 
     @has_perm()
     @commands.command(aliases=["send_msg", "sendmsg"])
     async def leavemsg(self, ctx: commands.Context, target: str, *, msg: str):
-        """leave a message for someone: !leavemsg @someone"""
+        """ - leave a message for someone: !leavemsg @someone"""
         sender = ctx.author.id
 
         if target.startswith("@"):
@@ -246,7 +251,7 @@ class GenCmds(commands.Component):
 
     @commands.command(aliases=["get_msg", "gm", "showfeet"])
     async def getmsg(self, ctx:commands.Context, sender: twitchio.User):
-        """get a message someone left you: !getmsg @username"""
+        """ - get a message someone left you: !getmsg @username"""
         receiver = ctx.author
         messages = await self.bot.db.get_message(sender=sender, receiver=receiver)
         for msg in messages:
@@ -260,10 +265,12 @@ class GenCmds(commands.Component):
 
     @commands.command(aliases=["mopLurk"])
     async def lurk(self, ctx: commands.Context):
+        """ - hide in a bush and watch like a real creep"""
         self.those_who_lurk.add(ctx.author.name)
 
     @commands.command()
     async def lurkers(self, ctx: commands.Context):
+        """ - out the lurkers"""
         if len(self.those_who_lurk) == 0:
             await ctx.send("No one hiding in the bushes")
             return
@@ -271,7 +278,7 @@ class GenCmds(commands.Component):
 
     @commands.command(aliases=["messages", "msgs"])
     async def inbox(self, ctx: commands.Context):
-        """shows how many messages you have waiting for you"""
+        """ - shows how many messages you have waiting for you"""
         response = await self.bot.db.notify(chatter_id=ctx.author.id)
 
         notify_parts: list[str] = []
@@ -292,13 +299,13 @@ class GenCmds(commands.Component):
 
     @commands.command(aliases=["clear", "clear_messages", "clear_msgs"])
     async def clear_inbox(self, ctx: commands.Context):
-        """deletes all stored messages for this user"""
+        """ - deletes all stored messages for this user"""
         count = await self.bot.db.clear_inbox(ctx.author.id)
         await ctx.reply(f"{count} msgs deleted")
 
     @commands.group(invoke_fallback=True)
     async def help(self, ctx: commands.Context, *, cmd: str | None = None):
-        """no help is coming! PANIC!!!!"""
+        """ - no help is coming! PANIC!!!!"""
         if not cmd:
             await ctx.send("use !help example_command_name to learn how that command works blah blah")
             return
@@ -318,7 +325,7 @@ class GenCmds(commands.Component):
 
     @commands.command(aliases=["commands"])
     async def cmds(self, ctx:commands.Context):
-        """lists all current commands for this channel"""
+        """ - lists all current commands for this channel"""
         cmds: list[str] = []
 
         for cmd in self.bot.unique_commands:
@@ -395,12 +402,12 @@ class GenCmds(commands.Component):
 
     @commands.command()
     async def claire(self, ctx: commands.Context):
-        """say "hi" to Claire!"""
+        """ - say "hi" to Claire!"""
         await ctx.reply("Wavegie")
 
     @commands.command(aliases=["discord", "community"])
     async def socials(self, ctx: commands.Context) -> None:
-        """get all active social links"""
+        """ - get all active social links"""
         await ctx.send("discord.gg/DBaUMawHhJ")
         #await ctx.send("other social") --- second await is the only way to print on new lines
 
