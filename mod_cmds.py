@@ -51,6 +51,7 @@ class ModCmds(commands.Component):
         async with self.bot.pool.acquire() as con:
             await con.executemany(sql_upsert, params)
 
+
     @commands.is_owner()
     @commands.command(aliases=["r"])
     async def reload(self, ctx: commands.Context, *, module: str) -> None:

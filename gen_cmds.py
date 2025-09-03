@@ -51,7 +51,7 @@ class GenCmds(commands.Component):
         self.those_who_lurk = set()
         self.rejected_songs = set()
         self.alerts_player = mpv.MPV(ytdl=True, video=False)
-        # self.alerts_player = mpv.MPV(ytdl=True)
+        self.project = ""
 
     #TODO - command: !LMGTFY or !LMKTFY - searches the arg and returns the summary/explanation
 
@@ -89,8 +89,6 @@ class GenCmds(commands.Component):
         self.alerts_player.play(file_path)
         self.alerts_player.wait_for_playback()
 
-#TODO - download the audio for the !listen commands for faster command speed (probably using
-# !sr and taking that self.yt.filepath obj)???
     @has_perm()
     @commands.cooldown(rate=1, per=COOLDOWN_LOWER, key=commands.BucketType.chatter)
     @commands.command(aliases=["song_req", "song_request"])
@@ -262,6 +260,17 @@ class GenCmds(commands.Component):
         if isinstance(payload.exception, commands.BadArgument):
             return False
 
+    @commands.is_owner()
+    @commands.command()
+    async def set_project(self, ctx: commands.Context, *, msg: str):
+        self.project = msg
+        await ctx.send("project updated")
+
+
+    @commands.command()
+    async def project(self, ctx: commands.Context):
+        # project = "command line adventure mystery"
+        await ctx.reply(f"Sheps is currently working on a {self.project}")
 
     @commands.command(aliases=["mopLurk"])
     async def lurk(self, ctx: commands.Context):
