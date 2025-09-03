@@ -269,7 +269,6 @@ class GenCmds(commands.Component):
 
     @commands.command()
     async def project(self, ctx: commands.Context):
-        # project = "command line adventure mystery"
         await ctx.reply(f"Sheps is currently working on a {self.project}")
 
     @commands.command(aliases=["mopLurk"])
