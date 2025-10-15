@@ -406,7 +406,15 @@ class GenCmds(commands.Component):
 
                 await payload.broadcaster.send_message(message=derp_string, sender=self.bot.user, token_for=self.bot.user)
 
-
+#TODO - below
+    # @commands.command()
+    # async def fuck_twitchio(self, ctx: commands.context):
+    #     chatters = await ctx.broadcaster.fetch_chatters(moderator=self.bot.owner_id)
+    #     names = {user.name async for user in chatters.users}
+    #     greetings = [f"Hi {name.capitalize()}" for name in ("chillymosh", "mystypy") if name in names]
+    #
+    #     result = " and ".join(greetings) if greetings else None
+    #     print(result)
 
     @commands.command()
     async def claire(self, ctx: commands.Context):
@@ -419,6 +427,10 @@ class GenCmds(commands.Component):
         await ctx.send("discord.gg/DBaUMawHhJ")
         #await ctx.send("other social") --- second await is the only way to print on new lines
 
+    @commands.command()
+    async def nvim(self, ctx: commands.Context):
+        """ - get Sheps's shexy nvim configs"""
+        await ctx.send("https://github.com/Shepsalmighty/nvim_configs")
 
 async def setup(bot: commands.Bot) -> None:
     await bot.add_component(GenCmds(bot))
